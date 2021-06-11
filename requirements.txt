@@ -1,10 +1,11 @@
-# local package
--e .
-
-# external requirements
-click
-Sphinx
-coverage
-awscli
-flake8
-python-dotenv>=0.5.1
+networkx==2.5
+nilearn==0.6.2
+pandas==0.25.1
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==1.8.1+cpu
+torchvision==0.9.1
+--find-links https://pytorch-geometric.com/whl/torch-1.8.0+cpu.html
+torch-cluster
+torch-scatter
+torch-sparse
+torch-geometric
