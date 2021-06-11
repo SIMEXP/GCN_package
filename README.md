@@ -1,2 +1,2 @@
-# GCN_package
-The lab repository for GCN
+# gcn_package
+The lab repository for gcn
