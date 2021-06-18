@@ -6,7 +6,7 @@ import numpy as np
 import utils
 
 class Data():
-  def __init__(self, ts_dir=None, conn_dir=None, pheno_path=None, sort_files=None):
+  def __init__(self, ts_dir=None, conn_dir=None, pheno_path=None):
     
     self.ts_dir = ts_dir
     self.conn_dir = conn_dir
