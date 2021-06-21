@@ -7,10 +7,18 @@ import utils
 
 class Data():
   def __init__(self, ts_dir=None, conn_dir=None, pheno_path=None):
-    
+    """
+    ts_dir: str
+      path to directory w/ timeseries
+    conn_dir: str
+      path to directory w/ connectomes
+    pheno_path: str
+      path to phenotype file. corresponding file must be in .tsv format & columns ID and 'Subject Type'
+    """
     self.ts_dir = ts_dir
     self.conn_dir = conn_dir
     self.pheno_path = pheno_path
+
     # check directories existence
     if not os.path.exists(self.ts_dir):
       raise ValueError("ts_dir does not exists: {}".format(self.ts_dir))
@@ -18,6 +26,7 @@ class Data():
       raise ValueError("conn_dir does not exists: {}".format(self.conn_dir))
     if not os.path.exists(self.pheno_path):
       raise ValueError("pheno_path does not exists: {}".format(self.pheno_path))
+
     # get list of files
     self.list_ts_files = sorted(os.listdir(self.ts_dir))
     self.list_conn_files = sorted(os.listdir(self.conn_dir))

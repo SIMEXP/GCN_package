@@ -1,4 +1,6 @@
 import numpy.lib.format
+import numpy as np
+from sklearn.model_selection import train_test_split
 
 # https://stackoverflow.com/questions/64226337/is-there-a-way-to-read-npy-header-without-loading-the-whole-file
 def read_npy_array_header(filepath):
@@ -9,49 +11,6 @@ def read_npy_array_header(filepath):
       header = func(fobj)
     
     return header
-
-######################
-# GRAPH CONSTRUCTION #
-######################
-
-def make_undirected(mat):
-    """Takes an input adjacency matrix and makes it undirected (symmetric)."""
-    m = mat.copy()
-    mask = mat != mat.transpose()
-    vals = mat[mask] + mat.transpose()[mask]
-    m[mask] = vals
-    return m
-
-def knn_graph(mat,k=8):
-    """Takes an input matrix and returns a k-Nearest Neighbour weighted adjacency matrix."""
-    is_undirected = (mat == mat.T).all()
-    m = np.abs(mat.copy())
-    np.fill_diagonal(m,0)
-    slices = []
-    for i in range(m.shape[0]):
-        s = m[:,i]
-        not_neighbours = s.argsort()[:-k]
-        s[not_neighbours] = 0
-        slices.append(s)
-    if is_undirected:
-        return np.array(slices)
-    else:
-        return make_undirected(np.array(slices))
-    
-def make_group_graph(conn_path,k=8):
-  """conn_path: path to dir containing connectomes, must be in .npy format."""
-    # Load connectomes
-    connectomes = [np.load(os.path.join(conn_path,p)) for p in os.listdir(conn_path)]
-
-    # Group average connectome
-    avg_conn = np.array(connectomes).mean(axis=0)
-
-    # Undirected 8 k-NN graph as matrix
-    avg_conn8 = knn_graph(avg_conn,k=k)
-
-    # Format matrix into graph for torch_geometric
-    graph = nx.convert_matrix.from_numpy_array(avg_conn8)
-    return tg.utils.from_networkx(graph)
 
 ################
 # TIME WINDOWS #
