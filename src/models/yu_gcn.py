@@ -5,7 +5,7 @@ import torch_geometric as tg
 import numpy as np
 
 class YuGCN(torch.nn.Module):
-    def __init__(self,edge_index,edge_weight,n_timepoints = 50):
+    def __init__(self,edge_index,edge_weight,n_timepoints = 50,n_classes=2):
         super().__init__()
         self.edge_index = edge_index
         self.edge_weight = edge_weight
@@ -17,7 +17,7 @@ class YuGCN(torch.nn.Module):
         self.conv6 = tg.nn.ChebConv(in_channels=32,out_channels=32,K=2,bias=True)
         self.fc1 = nn.Linear(512*32, 256)
         self.fc2 = nn.Linear(256, 128)
-        self.fc3 = nn.Linear(128, 2)
+        self.fc3 = nn.Linear(128, n_classes)
         self.dropout = nn.Dropout(0.5)
 
     def forward(self,x):
