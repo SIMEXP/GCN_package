@@ -60,6 +60,12 @@ class TestFeatures:
         A = np.random.randn(2,3)
         with pytest.raises(ValueError):
             graph.make_undirected(A)
+    
+    def test_knn_graph_valid(self):
+        A = np.array([[1.6,0.15,-0.1,-0.7],[0.15,-2.3,0.75,-0.6],[-0.1,0.75,1.5,-0.5],[-0.7,-0.6,-0.5,-1.1]])
+        B = np.array([[0.,0.075,0.,-0.7],[0.075,0.,0.75,-0.6],[0,0.75,0.,-0.25],[-0.7,-0.6,-0.25,0.]])
+        sol = graph.knn_graph(A,k=2)
+        assert (sol == B).all()
 
 class TestData:
     def test_timewindows_init_cobre(self):
