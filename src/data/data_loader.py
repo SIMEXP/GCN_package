@@ -5,15 +5,18 @@ import pandas as pd
 import numpy as np
 import utils
 
-class Data():
+class DataLoader():
   def __init__(self, ts_dir=None, conn_dir=None, pheno_path=None):
-    """
-    ts_dir: str
-      path to directory w/ timeseries
-    conn_dir: str
-      path to directory w/ connectomes
-    pheno_path: str
-      path to phenotype file. corresponding file must be in .tsv format & columns ID and 'Subject Type'
+    """ Initializer for DataLoader class.
+
+    Attributes
+    ----------
+      ts_dir: str
+        path to directory w/ timeseries
+      conn_dir: str
+        path to directory w/ connectomes
+      pheno_path: str
+        path to phenotype file. corresponding file must be in .tsv format & columns ID and 'Subject Type'
     """
     self.ts_dir = ts_dir
     self.conn_dir = conn_dir
@@ -33,7 +36,8 @@ class Data():
     self.non_valid_ids = self._check_non_valid_ids()
 
   def _check_non_valid_ids(self):
-
+    """ Check whether participant IDs are valid with regard to timeserie data.
+    """
     durations = []
     ids = []
     pattern = ".*?_([0-9]+)_.*\\.npy"
@@ -53,35 +57,39 @@ class Data():
     return non_valid_ids
 
   def get_timeseries(self):
-
+    """ Load valid timeserie data.
+    """
     timeseries = []
     # Get valid timeseries (with correct shapes)
     for ts_file in self.list_ts_files:
-      has_id = (np.char.find(ts_file, self.non_valid_ids) > 0)
-      if has_id.any():
+      is_valid = (np.char.find(ts_file, self.non_valid_ids) <= 0)
+      if is_valid:
         ts_filepath = os.path.join(self.ts_dir, ts_file)
         timeseries += [np.load(ts_filepath)]
 
     return timeseries
 
   def get_connectomes(self):
-
+    """ Load valid connectomes.
+    """
     connectomes = []
     # load connectomes
     for conn_file in self.list_conn_files:
-      has_id = (np.char.find(conn_file, self.non_valid_ids) > 0)
-      if has_id.any():
+      is_valid = (np.char.find(conn_file, self.non_valid_ids) <= 0)
+      if is_valid:
         connectomes += [np.load(os.path.join(self.conn_dir, conn_file))]
 
     return connectomes
 
   def get_pheno_labels(self):
-    
+    """ Load phenotype file and associated labels.
+    """
     pheno = pd.read_csv(self.pheno_path, delimiter='\t')
     ids_pheno = np.array(pheno['ID'], dtype=str)
-    valid_ids = np.where(np.in1d(ids_pheno, self.non_valid_ids))[0]
-    pheno = pheno.drop(labels=valid_ids, axis=0)
+    non_valid_ids = np.where(np.in1d(ids_pheno, self.non_valid_ids))[0]
+    pheno = pheno.drop(labels=non_valid_ids, axis=0)
     pheno.sort_values('ID',inplace=True)
+    pheno = pheno.reset_index(drop=True)
     labels = pheno['Subject Type'].map({'Patient':1,'Control':0}).tolist()
 
     return pheno, labels
@@ -90,10 +98,10 @@ if __name__ == "__main__":
   data_dir = os.path.join(
     os.path.dirname(__file__), "..", "..", "data", "cobre_difumo512", "difumo")
   
-  RawData = Data(
+  Data = DataLoader(
     ts_dir = os.path.join(data_dir, "timeseries")
     , conn_dir = os.path.join(data_dir, "connectomes")
     , pheno_path = os.path.join(data_dir, "phenotypic_data.tsv"))
-  timeseries = RawData.get_timeseries()
-  connectomes = RawData.get_connectomes()
-  phenotype, labels = RawData.get_pheno_labels()
+  timeseries = Data.get_timeseries()
+  connectomes = Data.get_connectomes()
+  phenotype, labels = Data.get_pheno_labels()
