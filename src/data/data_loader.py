@@ -5,7 +5,7 @@ import pandas as pd
 import numpy as np
 import utils
 
-class Data():
+class DataLoader():
   def __init__(self, ts_dir=None, conn_dir=None, pheno_path=None):
     
     self.ts_dir = ts_dir
@@ -48,8 +48,8 @@ class Data():
     timeseries = []
     # Get valid timeseries (with correct shapes)
     for ts_file in self.list_ts_files:
-      has_id = (np.char.find(ts_file, self.non_valid_ids) > 0)
-      if has_id.any():
+      is_valid = (np.char.find(ts_file, self.non_valid_ids) <= 0)
+      if is_valid:
         ts_filepath = os.path.join(self.ts_dir, ts_file)
         timeseries += [np.load(ts_filepath)]
 
@@ -60,8 +60,8 @@ class Data():
     connectomes = []
     # load connectomes
     for conn_file in self.list_conn_files:
-      has_id = (np.char.find(conn_file, self.non_valid_ids) > 0)
-      if has_id.any():
+      is_valid = (np.char.find(conn_file, self.non_valid_ids) <= 0)
+      if is_valid:
         connectomes += [np.load(os.path.join(self.conn_dir, conn_file))]
 
     return connectomes
@@ -70,9 +70,10 @@ class Data():
     
     pheno = pd.read_csv(self.pheno_path, delimiter='\t')
     ids_pheno = np.array(pheno['ID'], dtype=str)
-    valid_ids = np.where(np.in1d(ids_pheno, self.non_valid_ids))[0]
-    pheno = pheno.drop(labels=valid_ids, axis=0)
+    non_valid_ids = np.where(np.in1d(ids_pheno, self.non_valid_ids))[0]
+    pheno = pheno.drop(labels=non_valid_ids, axis=0)
     pheno.sort_values('ID',inplace=True)
+    pheno = pheno.reset_index(drop=True)
     labels = pheno['Subject Type'].map({'Patient':1,'Control':0}).tolist()
 
     return pheno, labels
@@ -81,10 +82,10 @@ if __name__ == "__main__":
   data_dir = os.path.join(
     os.path.dirname(__file__), "..", "..", "data", "cobre_difumo512", "difumo")
   
-  RawData = Data(
+  Data = DataLoader(
     ts_dir = os.path.join(data_dir, "timeseries")
     , conn_dir = os.path.join(data_dir, "connectomes")
     , pheno_path = os.path.join(data_dir, "phenotypic_data.tsv"))
-  timeseries = RawData.get_timeseries()
-  connectomes = RawData.get_connectomes()
-  phenotype, labels = RawData.get_pheno_labels()
+  timeseries = Data.get_timeseries()
+  connectomes = Data.get_connectomes()
+  phenotype, labels = Data.get_pheno_labels()
