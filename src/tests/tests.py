@@ -8,6 +8,8 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from src.models.yu_gcn import YuGCN
 from src.models import utils
+from src.features import graph_construction as graph
+import pytest
 
 def cobre_test_data(n_subs=10):
     #data_path = os.path.join("..", "data", "cobre_difumo512")
@@ -42,6 +44,22 @@ def fake_data(n_roi=15,n_timepoints=150,n_subs=10,seed=111):
     sub_ids = np.random.choice(list(range(n_subs*2)),size=n_subs,replace=False).tolist()
     labels = np.random.binomial(1,0.5,size=n_subs).tolist()
     return timeseries,connectomes,sub_ids,labels
+
+class TestFeatures:
+    def test_make_undirected_valid_unweighted(self):
+        A = np.array([[1,0,0],[1,0,0],[1,0,0]])
+        B = np.array([[1,1,1],[1,0,0],[1,0,0]])
+        assert (graph.make_undirected(A) == B).all()
+    
+    def test_make_undirected_valid_weighted(self):
+        A = np.array([[0.75,0,0],[0.3,0,0],[0.6,0,0]])
+        B = np.array([[0.75,0.15,0.3],[0.15,0,0],[0.3,0,0]])
+        assert (graph.make_undirected(A) == B).all()
+    
+    def test_make_undirected_invalid(self):
+        A = np.random.randn(2,3)
+        with pytest.raises(ValueError):
+            graph.make_undirected(A)
 
 class TestData:
     def test_timewindows_init_cobre(self):

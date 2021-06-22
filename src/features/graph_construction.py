@@ -4,12 +4,13 @@ import torch_geometric as tg
 
 def make_undirected(mat):
     """Takes an input adjacency matrix and makes it undirected (symmetric)."""
-    #TODO: check input is valid
-    m = mat.copy()
-    mask = mat != mat.transpose()
-    vals = mat[mask] + mat.transpose()[mask]
-    m[mask] = vals
-    return m
+    if not (mat.shape[0] == mat.shape[1]):
+        raise ValueError('Adjacency matrix must be square.')
+        
+    sym = (mat + mat.transpose())/2
+    if len(np.unique(mat)) == 2: #if graph was unweighted, return unweighted
+        return np.ceil(sym) #otherwise return average
+    return sym
 
 # ANNABELLE
 #def knn_graph(mat,k=8):
