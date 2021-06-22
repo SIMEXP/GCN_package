@@ -32,11 +32,32 @@ def cobre_test_data(n_subs=10):
         del connectomes[idx]
     return timeseries,connectomes,sub_ids,labels[:n_subs]
 
-class TestDatasets:
-    def test_timewindows_init(self):
+def fake_data(n_roi=15,n_timepoints=150,n_subs=10,seed=111):
+    np.random.seed(seed)
+    timeseries = [np.random.randn(n_timepoints,n_roi) for i in range(n_subs)]
+    connectomes = []
+    for i in range(n_subs):
+        A = np.tril(np.random.randn(n_roi,n_roi))
+        connectomes.append(A + np.transpose(A))
+    sub_ids = np.random.choice(list(range(n_subs*2)),size=n_subs,replace=False).tolist()
+    labels = np.random.binomial(1,0.5,size=n_subs).tolist()
+    return timeseries,connectomes,sub_ids,labels
+
+class TestData:
+    def test_timewindows_init_cobre(self):
         ts, conn, ids, labs = cobre_test_data()
-        tw.TimeWindows(ts,conn,ids,labs)
-        assert True
+        data = tw.TimeWindows(ts,conn,ids,labs)
+        assert len(data.timeseries) == 10
+    
+    def test_timewindows_init_fake(self):
+        ts, conn, ids, labs = fake_data()
+        data = tw.TimeWindows(ts,conn,ids,labs)
+        assert len(data.timeseries) == 10
+    
+    def test_timewindows_len_fake(self):
+        ts, conn, ids, labs = fake_data()
+        data = tw.TimeWindows(ts,conn,ids,labs)
+        assert len(data) == 30
 
 class TestModels:
     def test_yu_gcn(self):

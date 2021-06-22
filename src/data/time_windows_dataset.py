@@ -7,7 +7,7 @@ class TimeWindows(Dataset):
     def __init__(self,timeseries,connectomes,sub_ids,labels,test_size=0.20,val_size=0.10,random_state=111,n_timepoints=50,k=8):
         """
         timeseries: list of arrays
-            List of timeseries, all timeseries must be of the same length.
+            List of timeseries, all timeseries must be of the same length. Timeseries must be size n_timepoints x n_roi.
         connectomes: list of arrays
             List of connectomes.
         sub_ids: list of int
