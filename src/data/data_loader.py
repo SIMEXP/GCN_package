@@ -7,13 +7,16 @@ import utils
 
 class DataLoader():
   def __init__(self, ts_dir=None, conn_dir=None, pheno_path=None):
-    """
-    ts_dir: str
-      path to directory w/ timeseries
-    conn_dir: str
-      path to directory w/ connectomes
-    pheno_path: str
-      path to phenotype file. corresponding file must be in .tsv format & columns ID and 'Subject Type'
+    """ Initializer for DataLoader class.
+
+    Attributes
+    ----------
+      ts_dir: str
+        path to directory w/ timeseries
+      conn_dir: str
+        path to directory w/ connectomes
+      pheno_path: str
+        path to phenotype file. corresponding file must be in .tsv format & columns ID and 'Subject Type'
     """
     self.ts_dir = ts_dir
     self.conn_dir = conn_dir
@@ -33,7 +36,8 @@ class DataLoader():
     self.non_valid_ids = self._check_non_valid_ids()
 
   def _check_non_valid_ids(self):
-
+    """ Check whether participant IDs are valid with regard to timeserie data.
+    """
     durations = []
     ids = []
     pattern = ".*?_([0-9]+)_.*\\.npy"
@@ -53,7 +57,8 @@ class DataLoader():
     return non_valid_ids
 
   def get_timeseries(self):
-
+    """ Load valid timeserie data.
+    """
     timeseries = []
     # Get valid timeseries (with correct shapes)
     for ts_file in self.list_ts_files:
@@ -65,7 +70,8 @@ class DataLoader():
     return timeseries
 
   def get_connectomes(self):
-
+    """ Load valid connectomes.
+    """
     connectomes = []
     # load connectomes
     for conn_file in self.list_conn_files:
@@ -76,7 +82,8 @@ class DataLoader():
     return connectomes
 
   def get_pheno_labels(self):
-    
+    """ Load phenotype file and associated labels.
+    """
     pheno = pd.read_csv(self.pheno_path, delimiter='\t')
     ids_pheno = np.array(pheno['ID'], dtype=str)
     non_valid_ids = np.where(np.in1d(ids_pheno, self.non_valid_ids))[0]
