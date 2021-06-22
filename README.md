@@ -3,16 +3,25 @@ gcn_package
 
 The lab package for GCN
 
+### TODO:
+ - [ ] Tests for graph construction functions
+ - [ ] Tests for data util functions
+ - [ ] Tests for TimeWindows dataset
+ - [ ] Update notebook implementation to use src - (tutorial)
+ - [ ] Document functions
+ - [ ] Implement val loop
+ - [ ] Implement error throwing/valid input checks
+ - [ ] Implement padding in split timeseries
+     - timeseries length can be flexible
+     - window size won't need to be a divisor
+
 Project Organization
 ------------
 
     ├── LICENSE
     ├── Makefile           <- Makefile with commands like `make data` or `make train`
     ├── README.md          <- The top-level README for developers using this project.
-    ├── data               <- Where the dataset will be installed
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
-    │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
+    ├── data               <- Scripts to fetch and process data
     │
     ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
     │                         the creator's initials, and a short `-` delimited description, e.g.
@@ -25,22 +34,20 @@ Project Organization
     ├── src                <- Source code for use in this project.
     │   ├── __init__.py    <- Makes src a Python module
     │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
+    │   ├── data           <- Modules for custom pytorch datasets & utils.
+    │   │   └── time_windows_dataset.py
+    │   │   └── data_loader.py
+    │   │   └── utils.py
     │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
+    │   ├── features       <- Modules for building features from data.
+    │   │   └── graph_construction.py
     │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
+    │   ├── models         <- Modules for different model architectures & utils to run them.
+    │   │   ├── yu_gcn.py
+    │   │   └── utils.py
     │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
+    │   └── visualization  <- Modules to create exploratory and results oriented visualizations
     │       └── visualize.py
-    │
-    └── tox.ini            <- tox file with settings for running tox; see tox.testrun.org
-
 
 --------
 
