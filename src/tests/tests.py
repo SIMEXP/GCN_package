@@ -8,6 +8,8 @@ from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
 from src.models.yu_gcn import YuGCN
 from src.models import utils
+from src.features import graph_construction as graph
+import pytest
 
 def cobre_test_data(n_subs=10):
     #data_path = os.path.join("..", "data", "cobre_difumo512")
@@ -32,11 +34,54 @@ def cobre_test_data(n_subs=10):
         del connectomes[idx]
     return timeseries,connectomes,sub_ids,labels[:n_subs]
 
-class TestDatasets:
-    def test_timewindows_init(self):
+def fake_data(n_roi=15,n_timepoints=150,n_subs=10,seed=111):
+    np.random.seed(seed)
+    timeseries = [np.random.randn(n_timepoints,n_roi) for i in range(n_subs)]
+    connectomes = []
+    for i in range(n_subs):
+        A = np.tril(np.random.randn(n_roi,n_roi))
+        connectomes.append(A + np.transpose(A))
+    sub_ids = np.random.choice(list(range(n_subs*2)),size=n_subs,replace=False).tolist()
+    labels = np.random.binomial(1,0.5,size=n_subs).tolist()
+    return timeseries,connectomes,sub_ids,labels
+
+class TestFeatures:
+    def test_make_undirected_valid_unweighted(self):
+        A = np.array([[1,0,0],[1,0,0],[1,0,0]])
+        B = np.array([[1,1,1],[1,0,0],[1,0,0]])
+        assert (graph.make_undirected(A) == B).all()
+    
+    def test_make_undirected_valid_weighted(self):
+        A = np.array([[0.75,0,0],[0.3,0,0],[0.6,0,0]])
+        B = np.array([[0.75,0.15,0.3],[0.15,0,0],[0.3,0,0]])
+        assert (graph.make_undirected(A) == B).all()
+    
+    def test_make_undirected_invalid(self):
+        A = np.random.randn(2,3)
+        with pytest.raises(ValueError):
+            graph.make_undirected(A)
+    
+    def test_knn_graph_valid(self):
+        A = np.array([[1.6,0.15,-0.1,-0.7],[0.15,-2.3,0.75,-0.6],[-0.1,0.75,1.5,-0.5],[-0.7,-0.6,-0.5,-1.1]])
+        B = np.array([[0.,0.075,0.,-0.7],[0.075,0.,0.75,-0.6],[0,0.75,0.,-0.25],[-0.7,-0.6,-0.25,0.]])
+        sol = graph.knn_graph(A,k=2)
+        assert (sol == B).all()
+
+class TestData:
+    def test_timewindows_init_cobre(self):
         ts, conn, ids, labs = cobre_test_data()
-        tw.TimeWindows(ts,conn,ids,labs)
-        assert True
+        data = tw.TimeWindows(ts,conn,ids,labs)
+        assert len(data.timeseries) == 10
+    
+    def test_timewindows_init_fake(self):
+        ts, conn, ids, labs = fake_data()
+        data = tw.TimeWindows(ts,conn,ids,labs)
+        assert len(data.timeseries) == 10
+    
+    def test_timewindows_len_fake(self):
+        ts, conn, ids, labs = fake_data()
+        data = tw.TimeWindows(ts,conn,ids,labs)
+        assert len(data) == 30
 
 class TestModels:
     def test_yu_gcn(self):
