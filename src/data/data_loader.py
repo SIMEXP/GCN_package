@@ -2,7 +2,8 @@ import os
 import warnings
 import pandas as pd
 import numpy as np
-import utils
+import src.data as data
+import src.data.utils
 
 class DataLoader():
   def __init__(self, ts_dir=None, conn_dir=None, pheno_path=None):
@@ -79,7 +80,7 @@ class DataLoader():
     durations = []
     # check all shapes from *.npy header
     for ts_filepath in self.ts_filepaths:
-      shape = utils.read_npy_array_header(ts_filepath)[0]
+      shape = data.utils.read_npy_array_header(ts_filepath)[0]
       durations += [shape[0]]
     # check durations
     most_common_dura = np.bincount(durations).argmax()
