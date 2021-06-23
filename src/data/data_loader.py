@@ -156,11 +156,11 @@ if __name__ == "__main__":
   data_dir = os.path.join(
     os.path.dirname(__file__), "..", "..", "data", "cobre_difumo512", "difumo")
   
-  Data = DataLoader(
+  DataLoad = DataLoader(
     ts_dir = os.path.join(data_dir, "timeseries")
     , conn_dir = os.path.join(data_dir, "connectomes")
     , pheno_path = os.path.join(data_dir, "phenotypic_data.tsv"))
-  timeseries = Data.get_valid_timeseries()
-  connectomes = Data.get_valid_connectomes()
-  labels = Data.get_valid_labels()
-  phenotype = Data.get_valid_pheno()
+  timeseries = DataLoad.get_valid_timeseries()
+  connectomes = DataLoad.get_valid_connectomes()
+  labels = DataLoad.get_valid_labels()
+  phenotype = DataLoad.get_valid_pheno()
