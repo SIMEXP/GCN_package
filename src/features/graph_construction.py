@@ -50,6 +50,8 @@ def knn_graph(mat,k=8,selfloops=False,symmetric=True):
     ------
     ValueError
         If input matrix is not square.
+    ValueError
+        If k not in range [1,n_nodes).
     
     Returns
     -------
@@ -81,6 +83,46 @@ def knn_graph(mat,k=8,selfloops=False,symmetric=True):
     else:
         return adj
 
+def make_group_graph(connectomes,k=8,selfloops=False,symmetric=True):
+    """
+    Parameters
+    ----------
+    connectomes: list of array
+        List of connectomes in n_roi x n_roi format, connectomes must all be the same shape.
+    k: int, default=8
+        Number of neighbours.
+    selfloops: bool, default=False
+        Wether or not to keep selfloops in graph, if set to False resulting adjacency matrix
+        has zero along diagonal.
+    symmetric: bool, default=True
+        Wether or not to return a symmetric adjacency matrix. In cases where a node is in the neighbourhood
+        of another node that is not its neighbour, the connection strength between the two will be halved.
+    
+    Raises
+    ------
+    ValueError
+        If input connectomes are not square (only checks first).
+    ValueError
+        If k not in range [1,n_nodes).
+
+    Returns
+    -------
+    graph
+        Torch geometric graph object of k-Nearest Neighbours graph for the group average connectome.
+    """
+    if not (connectomes[0].shape[0] == connectomes[0].shape[1]):
+        raise ValueError('Connectomes must be square.')
+
+    # Group average connectome
+    avg_conn = np.array(connectomes).mean(axis=0)
+
+    # Undirected 8 k-NN graph as matrix
+    avg_conn_k = knn_graph(avg_conn,k=k,selfloops=selfloops,symmetric=symmetric)
+
+    # Format matrix into graph for torch_geometric
+    graph = nx.convert_matrix.from_numpy_array(avg_conn_k)
+    return tg.utils.from_networkx(graph)
+
 # LOIC
 def knn_graph_quantile(corr_matrix, k=8):
     """Takes an input correlation matrix and returns a k-Nearest Neighbour weighted undirected adjacency matrix."""
@@ -97,14 +139,3 @@ def knn_graph_quantile(corr_matrix, k=8):
         return m
     else:
         return make_undirected(m)
-    
-def make_group_graph(connectomes,k=8):
-    # Group average connectome
-    avg_conn = np.array(connectomes).mean(axis=0)
-
-    # Undirected 8 k-NN graph as matrix
-    avg_conn8 = knn_graph(avg_conn,k=k)
-
-    # Format matrix into graph for torch_geometric
-    graph = nx.convert_matrix.from_numpy_array(avg_conn8)
-    return tg.utils.from_networkx(graph)
