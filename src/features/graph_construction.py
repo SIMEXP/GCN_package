@@ -152,17 +152,6 @@ def knn_graph_quantile(mat, self_loops=False, k=8, symmetric=True):
         return make_undirected(adj)
     else:
         return adj
-    
-def make_group_graph(connectomes,k=8):
-    # Group average connectome
-    avg_conn = np.array(connectomes).mean(axis=0)
-
-    # Undirected 8 k-NN graph as matrix
-    avg_conn8 = knn_graph(avg_conn,k=k)
-
-    # Format matrix into graph for torch_geometric
-    graph = nx.convert_matrix.from_numpy_array(avg_conn8)
-    return tg.utils.from_networkx(graph)
 
 if __name__ == "__main__":
     import os
