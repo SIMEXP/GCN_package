@@ -81,36 +81,35 @@ def knn_graph(mat,k=8,selfloops=False,symmetric=True):
         return adj
 
 # LOIC
-def knn_graph_quantile(corr_matrix, self_loops=False, k=8, symmetric=True):
+def knn_graph_quantile(mat, self_loops=False, k=8, symmetric=True):
     """Takes an input correlation matrix and returns a k-Nearest Neighbour weighted undirected adjacency matrix."""
 
-    if not (corr_matrix.shape[0] == corr_matrix.shape[1]):
+    if not (mat.shape[0] == mat.shape[1]):
         raise ValueError('Adjacency matrix must be square.')
-    dim = corr_matrix.shape[0]
-    if (k<=0) or (dim <=k):
+    dim = mat.shape[0]
+    if (k <= 0) or (dim <= k):
         raise ValueError('k must be in range [1,n_nodes)')
 
-    m = corr_matrix.copy()
-    is_undirected = (corr_matrix == corr_matrix.T).all()
-    if not is_undirected:
-        m = make_undirected(m)
+    is_directed = not (mat == mat.transpose()).all()
     # absolute correlation
-    m = np.abs(m)
-    # knn graph with quantile
-    n_samples = m.shape[0]
-    quantile_h = np.quantile(m, (n_samples - k - 1)/n_samples, axis=1)
-    quantile_v = np.quantile(m, (n_samples - k - 1)/n_samples, axis=0)
-    # print(quantile_k[:, np.newaxis])
-    mask_not_neighbours = (m < quantile_h[:, np.newaxis]) | (m < quantile_v[np.newaxis, :])
-    m[mask_not_neighbours] = 0
+    mat = np.abs(mat)
+    adj = np.copy(mat)
+    # get NN thresholds from quantile
+    quantile_h = np.quantile(mat, (dim - k - 1)/dim, axis=1)
+    mask_not_neighbours = (mat < quantile_h[np.newaxis, :])
+    #TODO check if directed
+    if is_directed:
+        quantile_v = np.quantile(mat, (dim - k - 1)/dim, axis=1)
+        mask_not_neighbours = mask_not_neighbours & (adj < quantile_v[np.newaxis, :])
+    adj[mask_not_neighbours] = 0
 
     if not self_loops:
-        np.fill_diagonal(m, 0)
+        np.fill_diagonal(adj, 0)
  
     if symmetric:
-        return make_undirected(m)
+        return make_undirected(adj)
     else:
-        return m
+        return adj
     
 def make_group_graph(connectomes,k=8):
     # Group average connectome
@@ -137,6 +136,14 @@ if __name__ == "__main__":
         , pheno_path = os.path.join(data_dir, "phenotypic_data.tsv"))
     avg_conn = np.array(DataLoad.get_valid_connectomes()).mean(axis=0)
 
-    avg_conn8 = knn_graph(avg_conn, k=8)
-    avg_conn8_2 = knn_graph_quantile(avg_conn, k=8)
+    import time
+    start = time.time()
+    for ii in range(50):
+        avg_conn8 = knn_graph(avg_conn, k=8)
+    print("{}s".format(time.time() - start))
+    start = time.time()
+    for ii in range(50):
+        avg_conn8_quantile = knn_graph_quantile(avg_conn, k=8)
+    print("{}s".format(time.time() - start))
+    print(True)
     
