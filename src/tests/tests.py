@@ -66,6 +66,20 @@ class TestFeatures:
         B = np.array([[0.,0.075,0.,-0.7],[0.075,0.,0.75,-0.6],[0,0.75,0.,-0.25],[-0.7,-0.6,-0.25,0.]])
         sol = graph.knn_graph(A,k=2)
         assert (sol == B).all()
+    
+    def test_make_group_graph_sym(self):
+        conn = [np.random.randn(5,5) for i in range(10)]
+        g = graph.make_group_graph(conn,k=2)
+        print(g.edge_index.numpy())
+        print(g.weight.numpy())
+        assert 10 <= g.edge_index.size()[1] <= 20
+    
+    def test_make_group_graph_unsym(self):
+        conn = [np.random.randn(5,5) for i in range(10)]
+        g = graph.make_group_graph(conn,k=2,symmetric=False)
+        print(g.edge_index.numpy())
+        print(graph.knn_graph(np.mean(conn,axis=0),k=2,symmetric=False))
+        assert g.edge_index.size()[1] == 10
 
 class TestData:
     def test_timewindows_init_cobre(self):
@@ -80,7 +94,7 @@ class TestData:
     
     def test_timewindows_len_fake(self):
         ts, conn, ids, labs = fake_data()
-        data = tw.TimeWindows(ts,conn,ids,labs)
+        data = tw.TimeWindows(ts,conn,ids,labs) 
         assert len(data) == 30
 
 class TestModels:
