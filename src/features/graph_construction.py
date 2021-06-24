@@ -69,8 +69,7 @@ def knn_graph(mat,k=8,selfloops=False,symmetric=True):
     mask = np.zeros((dim,dim),dtype=bool)
     for i in range(dim):
         sorted_ind = m[:,i].argsort().tolist()
-        del sorted_ind[sorted_ind.index(i)] # Remove self from neighbour list
-        neighbours = sorted_ind[-k:]
+        neighbours = sorted_ind[-(k + 1):] #you want to include self
         mask[:,i][neighbours] = True
     adj = mat.copy() # Original connection strengths
     adj[~mask] = 0
@@ -124,18 +123,31 @@ def make_group_graph(connectomes,k=8,selfloops=False,symmetric=True):
     return tg.utils.from_networkx(graph)
 
 # LOIC
-def knn_graph_quantile(corr_matrix, k=8):
+def knn_graph_quantile(corr_matrix, self_loops=False, k=8, symmetric=True):
     """Takes an input correlation matrix and returns a k-Nearest Neighbour weighted undirected adjacency matrix."""
-    is_undirected = (corr_matrix == corr_matrix.T).all()
+
+    if not (corr_matrix.shape[0] == corr_matrix.shape[1]):
+        raise ValueError('Adjacency matrix must be square.')
+    dim = corr_matrix.shape[0]
+    if (k<=0) or (dim <=k):
+        raise ValueError('k must be in range [1,n_nodes)')
+
     m = corr_matrix.copy()
+    is_undirected = (corr_matrix == corr_matrix.T).all()
+    if not is_undirected:
+        m = make_undirected(m)
     # absolute correlation
     m = np.abs(m)
-    np.fill_diagonal(m, 0)
     # knn graph with quantile
-    quantile_k = np.quantile(m, k/m.shape[0], axis=-1)
-    mask_not_neighbours = (m > quantile_k)
+    n_samples = m.shape[0]
+    quantile_h = np.quantile(m, (n_samples - k - 1)/n_samples, axis=1)
+    quantile_v = np.quantile(m, (n_samples - k - 1)/n_samples, axis=0)
+    # print(quantile_k[:, np.newaxis])
+    mask_not_neighbours = (m < quantile_h[:, np.newaxis]) | (m < quantile_v[np.newaxis, :])
     m[mask_not_neighbours] = 0
-    if is_undirected:
-        return m
-    else:
+
+    if not self_loops:
+        np.fill_diagonal(m, 0)
+ 
+    if symmetric:
         return make_undirected(m)
