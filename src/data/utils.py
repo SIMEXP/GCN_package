@@ -16,7 +16,7 @@ def read_npy_array_header(filepath):
 # TIME WINDOWS #
 ################
 
-def split_timeseries(ts,n_timepoints=50):
+def split_timeseries(ts, n_timepoints=50):
     """Takes an input timeseries and splits it into time windows of specified length. Need to choose a number that splits evenly."""
     if ts.shape[0] % n_timepoints != 0:
         raise ValueError('Yikes choose a divisor for now')
@@ -24,7 +24,7 @@ def split_timeseries(ts,n_timepoints=50):
         n_splits = ts.shape[0] / n_timepoints
         return np.split(ts,n_splits)
 
-def split_ts_labels(timeseries,labels,n_timepoints=50):
+def split_ts_labels(timeseries, labels, n_timepoints=50):
     """
     timeseries: list of timeseries
     labels: list of lists (of accompanying labels)
@@ -46,7 +46,7 @@ def split_ts_labels(timeseries,labels,n_timepoints=50):
     split_labels.append(list(range(n))*len(timeseries))
     return split_ts, split_labels
 
-def train_test_val_splits(split_ids,test_size=0.20,val_size=0.10,random_state=111):
+def train_test_val_splits(split_ids, test_size=0.20, val_size=0.10, random_state=111):
     """Train test val split the data (in splits) so splits from a subject are in the same group.
         returns INDEX for each split
     """

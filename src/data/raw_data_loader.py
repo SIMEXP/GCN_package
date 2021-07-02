@@ -5,7 +5,7 @@ import numpy as np
 import src.data as data
 import src.data.utils
 
-class DataLoader():
+class RawDataLoader():
   def __init__(self, ts_dir=None, conn_dir=None, pheno_path=None):
     """ Initializer for DataLoader class.
 
@@ -41,8 +41,8 @@ class DataLoader():
     mask_valid = np.in1d(self.ids, self.valid_ids)
     self.pheno = self.pheno[mask_valid]
     self.pheno = self.pheno.reset_index(drop=True)
-    self.ts_filepaths = np.array(self.ts_filepaths)[mask_valid]
-    self.conn_filepaths = np.array(self.conn_filepaths)[mask_valid]
+    self.valid_ts_filepaths = np.array(self.ts_filepaths)[mask_valid]
+    self.valid_conn_filepaths = np.array(self.conn_filepaths)[mask_valid]
 
   def _get_pheno(self):
     """ Load phenotype file.
@@ -101,7 +101,7 @@ class DataLoader():
 
     Parameters
     ----------
-      idx: `list` of `int` or `slice`
+      idx: `int`, `list` of `int` or `slice`
         list of indices to load.
     """
     
@@ -109,11 +109,9 @@ class DataLoader():
       raise ValueError("Input idx must be a `list` of int, but is {}!".format(type(idx)))
     timeseries = []
     # Get valid timeseries (with correct shapes)
-    for ts_file in self.ts_filepaths[idx]:
-      is_valid = (np.char.find(ts_file, self.valid_ids) > 0).any()
-      if is_valid:
-        ts_filepath = os.path.join(self.ts_dir, ts_file)
-        timeseries += [np.load(ts_filepath)]
+    for ts_file in self.valid_ts_filepaths[idx]:
+      ts_filepath = os.path.join(self.ts_dir, ts_file)
+      timeseries += [np.load(ts_filepath)]
 
     return timeseries
 
@@ -130,10 +128,8 @@ class DataLoader():
       raise ValueError("Input idx must be a `list` of int, but is {}!".format(type(idx)))
     connectomes = []
     # load connectomes
-    for conn_file in self.conn_filepaths[idx]:
-      is_valid = (np.char.find(conn_file, self.valid_ids) > 0).any()
-      if is_valid:
-        connectomes += [np.load(os.path.join(self.conn_dir, conn_file))]
+    for conn_file in self.valid_conn_filepaths[idx]:
+      connectomes += [np.load(os.path.join(self.conn_dir, conn_file))]
 
     return connectomes
 
@@ -153,15 +149,65 @@ class DataLoader():
 
     return labels
 
+  def split_timeseries_and_save(self, window_length=45, zero_padding=True, tmp_dir=os.path.join("..", "..", "data", "interim")):
+    """ Split the timeseries into time windows of specified length, and save them with the corresponding label file.
+
+    Parameters
+    ----------
+    window_length: `int`
+      time window length for each split, if -1 then do not split but still save.
+    zero_padding: `bool`
+      pad with zeros if timeserie cannot be evenly splitted, if `False` then remove last split instead.
+    tmp_dir: `string`
+      temporary directory where to save splitted timeseries and label file.
+    """
+    #TODO: split from task event file
+
+    label_df = pd.DataFrame(columns=["label", "filename"])
+    out_file = os.path.join(tmp_dir, "{}_{:03d}.npy")
+
+    # Split the timeseries
+    for ii in range(len(self.valid_ts_filepaths)):
+      ts = self.get_valid_timeseries([ii])[0]
+      ts_duration = ts.shape[0]
+      rem = ts_duration % window_length
+      if rem == 0:
+        n_splits = int(ts_duration / window_length)
+      else:
+        if zero_padding:
+          n_splits = np.ceil(ts_duration / window_length)
+          pad_size = int(n_splits*window_length - ts_duration)
+          pad_widths = [(0, pad_size), (0, 0)]
+          ts = np.pad(ts, pad_width=pad_widths)
+        else:
+          ts = ts[:(ts_duration-rem), :]
+          n_splits = np.floor(ts_duration / window_length)
+      split_ts = np.split(ts, n_splits)
+
+    # tmp = [split_timeseries(t,n_timepoints=n_timepoints) for t in timeseries]
+    # for ts in tmp:
+    #     split_ts = split_ts + ts
+
+    # #keep track of the corresponding labels
+    # n = int(timeseries[0].shape[0]/n_timepoints)
+    # split_labels = []
+    # for l in labels:
+    #     split_labels.append(np.repeat(l,n))
+
+    # #add a label for each split
+    # split_labels.append(list(range(n))*len(timeseries))
+    # return split_ts, split_labels
+
 if __name__ == "__main__":
   data_dir = os.path.join(
-    os.path.dirname(__file__), "..", "..", "data", "cobre_difumo512", "difumo")
+    os.path.dirname(__file__), "..", "..", "data", "raw", "cobre_difumo512", "difumo")
   
-  DataLoad = DataLoader(
+  RawDataLoad = RawDataLoader(
     ts_dir = os.path.join(data_dir, "timeseries")
     , conn_dir = os.path.join(data_dir, "connectomes")
     , pheno_path = os.path.join(data_dir, "phenotypic_data.tsv"))
-  timeseries = DataLoad.get_valid_timeseries()
-  connectomes = DataLoad.get_valid_connectomes()
-  labels = DataLoad.get_valid_labels()
-  phenotype = DataLoad.get_valid_pheno()
+  timeseries = RawDataLoad.get_valid_timeseries()
+  connectomes = RawDataLoad.get_valid_connectomes()
+  labels = RawDataLoad.get_valid_labels()
+  phenotype = RawDataLoad.get_valid_pheno()
+  RawDataLoad.split_timeseries_and_save()

@@ -1,7 +1,10 @@
 import torch
-from torch.utils.data import Dataset
+# from torch.utils.data import Dataset
 from src.data import utils
 from src.features import graph_construction as graph
+
+class TimeWindowsDataset(torch.utils.data.Dataset):
+
 
 class TimeWindows(Dataset):
     def __init__(self,timeseries,connectomes,sub_ids,labels,test_size=0.20,val_size=0.10,random_state=111,n_timepoints=50,k=8):
