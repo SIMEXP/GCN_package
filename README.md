@@ -14,7 +14,13 @@ The lab package for GCN
  - [ ] Implement padding in split timeseries
      - timeseries length can be flexible
      - window size won't need to be a divisor
-
+ - [ ] Command line tool for end-to-end training (optionnal)
+     - Auto-encoder (target is the input) or classification (label)
+     - agnostic timeseries-splitting and labelling:
+         - Read participant condition (label) from [paticipant file](https://bids-specification.readthedocs.io/en/stable/03-modality-agnostic-files.html#participants-file) or phenotype.
+         - Split and task-label based from [task event file](https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/05-task-events.html#task-events)
+         - file should contain at least id
+ 
 Project Organization
 ------------
 
