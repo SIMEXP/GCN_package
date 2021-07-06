@@ -144,12 +144,12 @@ class RawDataLoader():
     
     if not (isinstance(idx, list) | isinstance(idx, slice)):
       raise ValueError("Input idx must be a `list` of int, but is {}!".format(type(idx)))
-    labels = self.pheno['Subject Type'].map({'Patient':1,'Control':0}).tolist()
+    labels = np.array(self.pheno['Subject Type'].map({'Patient':1,'Control':0}).tolist())
     labels = labels[idx]
 
     return labels
 
-  def split_timeseries_and_save(self, window_length=45, zero_padding=True, tmp_dir=os.path.join("..", "..", "data", "interim")):
+  def split_timeseries_and_save(self, window_length=45, zero_padding=True, tmp_dir=os.path.join(os.path.dirname(__file__), "..", "..", "data", "interim")):
     """ Split the timeseries into time windows of specified length, and save them with the corresponding label file.
 
     Parameters
@@ -163,14 +163,19 @@ class RawDataLoader():
     """
     #TODO: split from task event file
 
-    label_df = pd.DataFrame(columns=["label", "filename"])
+    label_df = pd.DataFrame(columns=['label', 'filename'])
     out_file = os.path.join(tmp_dir, "{}_{:03d}.npy")
+    out_csv = os.path.join(tmp_dir, "labels.csv")
 
-    # Split the timeseries
     for ii in range(len(self.valid_ts_filepaths)):
-      ts = self.get_valid_timeseries([ii])[0]
-      ts_duration = ts.shape[0]
+      ts_filename = os.path.basename(self.valid_ts_filepaths[ii])
+      ts_filename = "".join(ts_filename.split(".")[:-1])
+      ts_label = self.get_valid_labels([ii])[0]
+      ts_data = self.get_valid_timeseries([ii])[0]
+      ts_duration = ts_data.shape[0]
+      # Split the timeseries
       rem = ts_duration % window_length
+      # Split the timeseries
       if rem == 0:
         n_splits = int(ts_duration / window_length)
       else:
@@ -178,25 +183,17 @@ class RawDataLoader():
           n_splits = np.ceil(ts_duration / window_length)
           pad_size = int(n_splits*window_length - ts_duration)
           pad_widths = [(0, pad_size), (0, 0)]
-          ts = np.pad(ts, pad_width=pad_widths)
+          ts_data = np.pad(ts_data, pad_width=pad_widths)
         else:
-          ts = ts[:(ts_duration-rem), :]
+          ts_data = ts_data[:(ts_duration-rem), :]
           n_splits = np.floor(ts_duration / window_length)
-      split_ts = np.split(ts, n_splits)
-
-    # tmp = [split_timeseries(t,n_timepoints=n_timepoints) for t in timeseries]
-    # for ts in tmp:
-    #     split_ts = split_ts + ts
-
-    # #keep track of the corresponding labels
-    # n = int(timeseries[0].shape[0]/n_timepoints)
-    # split_labels = []
-    # for l in labels:
-    #     split_labels.append(np.repeat(l,n))
-
-    # #add a label for each split
-    # split_labels.append(list(range(n))*len(timeseries))
-    # return split_ts, split_labels
+      # save splitted timeserie and label
+      for jj, split_ts in enumerate(np.split(ts_data, n_splits)):
+        ts_output_file = out_file.format(ts_filename, jj)
+        np.save(ts_output_file, split_ts)
+        curr_label = {'label': ts_label, 'filename': ts_output_file}
+        label_df = label_df.append(curr_label, ignore_index=True)
+    label_df.to_csv(out_csv)
 
 if __name__ == "__main__":
   data_dir = os.path.join(
