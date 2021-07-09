@@ -149,7 +149,7 @@ class RawDataLoader():
 
     return labels
 
-  def split_timeseries_and_save(self, window_length=45, zero_padding=True, tmp_dir=os.path.join(os.path.dirname(__file__), "..", "..", "data", "interim")):
+  def split_timeseries_and_save(self, window_length, zero_padding=True, output_dir=None):
     """ Split the timeseries into time windows of specified length, and save them with the corresponding label file.
 
     Parameters
@@ -158,14 +158,15 @@ class RawDataLoader():
       time window length for each split, if -1 then do not split but still save.
     zero_padding: `bool`
       pad with zeros if timeserie cannot be evenly splitted, if `False` then remove last split instead.
-    tmp_dir: `string`
+    output_dir: `string`
       temporary directory where to save splitted timeseries and label file.
     """
     #TODO: split from task event file
-
+    if output_dir is None:
+      output_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "interim")
     label_df = pd.DataFrame(columns=['label', 'filename'])
-    out_file = os.path.join(tmp_dir, "{}_{:03d}.npy")
-    out_csv = os.path.join(tmp_dir, "labels.csv")
+    out_file = os.path.join(output_dir, "{}_{:03d}.npy")
+    out_csv = os.path.join(output_dir, "labels.csv")
 
     for ii in range(len(self.valid_ts_filepaths)):
       ts_filename = os.path.basename(self.valid_ts_filepaths[ii])
@@ -176,6 +177,9 @@ class RawDataLoader():
       # Split the timeseries
       rem = ts_duration % window_length
       # Split the timeseries
+      #TODO: Define behaviour for incomplete data
+      #1. Extrapolate (current, pad with zeros)
+      #2. drop incomplete
       if rem == 0:
         n_splits = int(ts_duration / window_length)
       else:
@@ -191,9 +195,9 @@ class RawDataLoader():
       for jj, split_ts in enumerate(np.split(ts_data, n_splits)):
         ts_output_file = out_file.format(ts_filename, jj)
         np.save(ts_output_file, split_ts)
-        curr_label = {'label': ts_label, 'filename': ts_output_file}
+        curr_label = {'label': ts_label, 'filename': os.path.basename(ts_output_file)}
         label_df = label_df.append(curr_label, ignore_index=True)
-    label_df.to_csv(out_csv)
+    label_df.to_csv(out_csv, index=False)
 
 if __name__ == "__main__":
   data_dir = os.path.join(
@@ -207,4 +211,4 @@ if __name__ == "__main__":
   connectomes = RawDataLoad.get_valid_connectomes()
   labels = RawDataLoad.get_valid_labels()
   phenotype = RawDataLoad.get_valid_pheno()
-  RawDataLoad.split_timeseries_and_save()
+  RawDataLoad.split_timeseries_and_save(window_length=50)
