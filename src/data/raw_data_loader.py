@@ -162,6 +162,10 @@ class RawDataLoader():
       temporary directory where to save splitted timeseries and label file.
     """
     #TODO: split from task event file
+    #TODO: use joblib.Memory
+    #TODO: Define behaviour for incomplete data
+      #1. Extrapolate (current, pad with zeros)
+      #2. drop incomplete
     if output_dir is None:
       output_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "interim")
     label_df = pd.DataFrame(columns=['label', 'filename'])
@@ -177,9 +181,6 @@ class RawDataLoader():
       # Split the timeseries
       rem = ts_duration % window_length
       # Split the timeseries
-      #TODO: Define behaviour for incomplete data
-      #1. Extrapolate (current, pad with zeros)
-      #2. drop incomplete
       if rem == 0:
         n_splits = int(ts_duration / window_length)
       else:
