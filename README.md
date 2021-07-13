@@ -1,7 +1,7 @@
-gcn_package
+simexp_gcn
 ==============================
 
-The lab package for GCN
+The SIMEXP lab package for GCN
 
 ### TODO:
  - [ ] Tests for graph construction functions
