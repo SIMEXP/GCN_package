@@ -1,6 +1,6 @@
 """
 str(__file__) \
-+ "\ngcn_package v{} - class {}".format(src.__version__, self.__class__.__name__) \
++ "\ngcn_package v{} - class {}".format(simexp_gcn.__version__, self.__class__.__name__) \
 + "\n" + str(datetime.datetime.now()) \
 + "\n" + str(platform.platform()) \
 """

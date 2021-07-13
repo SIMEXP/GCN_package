@@ -69,7 +69,7 @@ def knn_graph(mat,k=8,selfloops=False,symmetric=True):
     mask = np.zeros((dim,dim),dtype=bool)
     for i in range(dim):
         sorted_ind = m[:,i].argsort().tolist()
-        neighbours = sorted_ind[-(k + 1):] #you want to include self
+        neighbours = sorted_ind[-(k):] #you want to include self
         mask[:,i][neighbours] = True
     adj = mat.copy() # Original connection strengths
     adj[~mask] = 0
