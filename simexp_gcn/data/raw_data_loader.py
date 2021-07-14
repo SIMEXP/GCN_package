@@ -2,8 +2,8 @@ import os
 import warnings
 import pandas as pd
 import numpy as np
-import src.data as data
-import src.data.utils
+import simexp_gcn.data as data
+import simexp_gcn.data.utils
 
 class RawDataLoader():
   def __init__(self, ts_dir=None, conn_dir=None, pheno_path=None):
