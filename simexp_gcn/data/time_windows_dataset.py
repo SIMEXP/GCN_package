@@ -19,6 +19,7 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
     , val_ratio=0.20
     , test_ratio=0.10
     , random_seed=0
+    , shuffle=False
     , normalize=True
     , pin_memory=False
     , autoencoder=False):
@@ -36,6 +37,8 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
         Test data partition ratio (default: 0.1).
       random_seed: `int`
         Seed value used to fix the random state (default: 0).
+      shuffle: `bool`
+        Shuffle the dataset or not (default: False).
       normalize: `bool`
         Either to normalize the generated data or not (default: True).
       pin_memory: `bool`
@@ -49,6 +52,7 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
     self.test_ratio = test_ratio
     self.val_ratio = val_ratio
     self.random_seed = random_seed
+    self.shuffle = shuffle
     self.normalize = normalize
     self.pin_memory = pin_memory
     self.autoencoder = autoencoder
@@ -112,9 +116,10 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
     n_samples = len(self._data_filepaths)
     train_index = (1 - self.test_ratio - self.val_ratio)
     val_index = (1 - self.test_ratio)
-    rng = np.random.default_rng(self.random_seed)
     indexes = np.arange(n_samples)
-    rng.shuffle(indexes)
+    if self.shuffle:
+      rng = np.random.default_rng(self.random_seed)
+      rng.shuffle(indexes)
 
     if self.partition == "train":
         range_idx = (0, int(train_index * n_samples))
