@@ -20,7 +20,7 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
     , test_ratio=0.10
     , random_seed=0
     , shuffle=False
-    , normalize=True
+    , normalize=False
     , pin_memory=False
     , autoencoder=False):
     """ Initializer for TimeWindowsDataset class.

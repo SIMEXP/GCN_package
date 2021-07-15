@@ -69,7 +69,7 @@ def knn_graph(mat,k=8,selfloops=False,symmetric=True):
     mask = np.zeros((dim,dim),dtype=bool)
     for i in range(dim):
         sorted_ind = m[:,i].argsort().tolist()
-        neighbours = sorted_ind[-(k):] #you want to include self
+        neighbours = sorted_ind[-(k+1):] #self is considered
         mask[:,i][neighbours] = True
     adj = mat.copy() # Original connection strengths
     adj[~mask] = 0
@@ -127,44 +127,39 @@ def knn_graph_quantile(mat, self_loops=False, k=8, symmetric=True):
     """Takes an input correlation matrix and returns a k-Nearest Neighbour weighted undirected adjacency matrix."""
 
     if not (mat.shape[0] == mat.shape[1]):
-        raise ValueError('Adjacency matrix must be square.')
+        raise ValueError("Adjacency matrix must be square.")
     dim = mat.shape[0]
     if (k <= 0) or (dim <= k):
-        raise ValueError('k must be in range [1,n_nodes)')
-
+        raise ValueError("k must be in range [1,n_nodes)")
     is_directed = not (mat == mat.transpose()).all()
+    if is_directed:
+        raise ValueError("Input adjacency matrix must be undirected (matrix symmetric)!")
+
     # absolute correlation
     mat = np.abs(mat)
     adj = np.copy(mat)
     # get NN thresholds from quantile
     quantile_h = np.quantile(mat, (dim - k - 1)/dim, axis=0)
     mask_not_neighbours = (mat < quantile_h[:, np.newaxis])
-    #TODO check if directed
-    if is_directed:
-        quantile_v = np.quantile(mat, (dim - k - 1)/dim, axis=1)
-        mask_not_neighbours = mask_not_neighbours & (adj < quantile_v[np.newaxis, :])
     adj[mask_not_neighbours] = 0
-
     if not self_loops:
         np.fill_diagonal(adj, 0)
- 
     if symmetric:
-        return make_undirected(adj)
-    else:
-        return adj
+        adj = make_undirected(adj)
+    
+    return adj
 
 if __name__ == "__main__":
     import os
     import matplotlib.pyplot as plt
-    import src.data as data
-    import src.data.data_loader
+    import simexp_gcn
+    import simexp_gcn.data as data
+    import simexp_gcn.data.raw_data_loader
     
-    data_dir = os.path.join(
-        os.path.dirname(__file__), "..", "..", "data", "cobre_difumo512", "difumo")
-    DataLoad = data.data_loader.DataLoader(
-        ts_dir = os.path.join(data_dir, "timeseries")
-        , conn_dir = os.path.join(data_dir, "connectomes")
-        , pheno_path = os.path.join(data_dir, "phenotypic_data.tsv"))
+    conn_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "cobre_difumo512", "connectomes")
+    ts_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "cobre_difumo512", "timeseries")
+    pheno_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "raw", "cobre", "phenotypic_data.tsv")
+    DataLoad = simexp_gcn.data.raw_data_loader.RawDataLoader(ts_dir=ts_dir, conn_dir=conn_dir,  pheno_path=pheno_path)
     avg_conn = np.array(DataLoad.get_valid_connectomes()).mean(axis=0)
 
     import time

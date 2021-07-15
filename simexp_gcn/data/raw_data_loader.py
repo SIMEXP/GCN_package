@@ -109,8 +109,7 @@ class RawDataLoader():
       raise ValueError("Input idx must be a `list` of int, but is {}!".format(type(idx)))
     timeseries = []
     # Get valid timeseries (with correct shapes)
-    for ts_file in self.valid_ts_filepaths[idx]:
-      ts_filepath = os.path.join(self.ts_dir, ts_file)
+    for ts_filepath in self.valid_ts_filepaths[idx]:
       timeseries += [np.load(ts_filepath)]
 
     return timeseries
@@ -128,8 +127,8 @@ class RawDataLoader():
       raise ValueError("Input idx must be a `list` of int, but is {}!".format(type(idx)))
     connectomes = []
     # load connectomes
-    for conn_file in self.valid_conn_filepaths[idx]:
-      connectomes += [np.load(os.path.join(self.conn_dir, conn_file))]
+    for conn_filepath in self.valid_conn_filepaths[idx]:
+      connectomes += [np.load(conn_filepath)]
 
     return connectomes
 
@@ -168,6 +167,10 @@ class RawDataLoader():
       #2. drop incomplete
     if output_dir is None:
       output_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "interim")
+    else:
+      if not os.path.exists(output_dir):
+        raise ValueError("output_dir does not exists: {}".format(output_dir))
+
     label_df = pd.DataFrame(columns=['label', 'filename'])
     out_file = os.path.join(output_dir, "{}_{:03d}.npy")
     out_csv = os.path.join(output_dir, "labels.csv")
@@ -201,15 +204,15 @@ class RawDataLoader():
     label_df.to_csv(out_csv, index=False)
 
 if __name__ == "__main__":
-  data_dir = os.path.join(
-    os.path.dirname(__file__), "..", "..", "data", "raw", "cobre_difumo512", "difumo")
+  data_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "cobre_difumo512")
+  pheno_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "raw", "cobre", "phenotypic_data.tsv")
   
   RawDataLoad = RawDataLoader(
-    ts_dir = os.path.join(data_dir, "timeseries")
-    , conn_dir = os.path.join(data_dir, "connectomes")
-    , pheno_path = os.path.join(data_dir, "phenotypic_data.tsv"))
+      ts_dir=os.path.join(data_dir, "timeseries")
+      , conn_dir=os.path.join(data_dir, "connectomes")
+      , pheno_path=pheno_path)
   timeseries = RawDataLoad.get_valid_timeseries()
   connectomes = RawDataLoad.get_valid_connectomes()
   labels = RawDataLoad.get_valid_labels()
   phenotype = RawDataLoad.get_valid_pheno()
-  RawDataLoad.split_timeseries_and_save(window_length=50)
+  RawDataLoad.split_timeseries_and_save(window_length=50, zero_padding=True, output_dir=None)
