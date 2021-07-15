@@ -68,16 +68,17 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
     self._data_filepaths, self._label_filepath = self._read_file_list()
     # define indexes for the current partition
     self._partition_indexes = self._set_indexes_partition()
+    self._partition_filepaths = self._data_filepaths[self._partition_indexes]
     # read partition data, filepaths or data directly
     if self.pin_memory:
-      self.partition_data = [np.load(data_filepath) for data_filepath in self._data_filepaths[self._partition_indexes]]
+      self.partition_data = [np.load(data_filepath) for data_filepath in self._partition_filepaths]
       # check RAM usage
       avail_ram = psutil.virtual_memory().available
       predicted_ram = len(self.partition_data)*self.partition_data[0].size*self.partition_data[0].itemsize
       if (predicted_ram / avail_ram) > 0.2:
         warnings.warn("Data uses more than 20% of available RAM ({:.1f} MB), consider using `pin_memory=False`.".format(predicted_ram/1e6))
     else:
-      self.partition_data = self._data_filepaths[self._partition_indexes]
+      self.partition_data = self._partition_filepaths
     # read partition targets
     if (self._label_filepath is None) | self.autoencoder:
       if self.autoencoder == False:
@@ -91,7 +92,7 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
 
   def __len__(self):
     """Return the length of the current generator."""
-    return len(self._data_filepaths[self._partition_indexes])
+    return len(self._partition_filepaths)
 
   def __getitem__(self, idx):
     """Generate one generator item (data and targets)."""
@@ -110,6 +111,9 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
       outputs = (torch.from_numpy(np_data), self.partition_targets[idx])
 
     return outputs[0], outputs[1]
+
+  def get_item_path(self, idx):
+    return self._partition_filepaths[idx]
 
   def _set_indexes_partition(self):
     """Partition indexes into train/valid/test data"""
@@ -166,24 +170,24 @@ if __name__ == "__main__":
 
   # Pytorch generator test
   torch.manual_seed(random_seed)
-  train_data = TimeWindowsDataset(data_dir=data_dir, partition="train", random_seed=random_seed, pin_memory=True)
-  train_gen = torch.utils.data.DataLoader(train_data, batch_size=16, shuffle=True)
+  train_dataset = TimeWindowsDataset(data_dir=data_dir, partition="train", random_seed=random_seed, pin_memory=True)
+  train_gen = torch.utils.data.DataLoader(train_dataset, batch_size=16, shuffle=True)
   train_features, train_labels = next(iter(train_gen))
   print(f"Feature batch shape: {train_features.size()}; mean {torch.mean(train_features)}")
   print(f"Labels batch shape: {train_labels.size()}; mean {torch.mean(torch.Tensor.float(train_labels))}")
   # check train, valid and test generator
-  valid_data = TimeWindowsDataset(data_dir=data_dir, partition="valid", pin_memory=True)
-  test_data = TimeWindowsDataset(data_dir=data_dir, partition="test", pin_memory=True)
-  print("Train generator object: {}".format(train_data))
-  for ii, data in enumerate(train_data):
+  valid_dataset = TimeWindowsDataset(data_dir=data_dir, partition="valid", pin_memory=True)
+  test_dataset = TimeWindowsDataset(data_dir=data_dir, partition="test", pin_memory=True)
+  print("Train generator object: {}".format(train_dataset))
+  for ii, data in enumerate(train_dataset):
     print("\r\t#{} - ({}, {})".format(ii, data[0].shape, data[1].shape), end='')
   print("")
-  print("Valid generator object: {}".format(valid_data))
-  for ii, data in enumerate(valid_data):
+  print("Valid generator object: {}".format(valid_dataset))
+  for ii, data in enumerate(valid_dataset):
     print("\r\t#{} - ({}, {})".format(ii, data[0].shape, data[1].shape), end='')
   print("")
-  print("Test generator object: {}".format(test_data))
-  for ii, data in enumerate(test_data):
+  print("Test generator object: {}".format(test_dataset))
+  for ii, data in enumerate(test_dataset):
     print("\r\t#{} - ({}, {})".format(ii, data[0].shape, data[1].shape), end='')
   print("")
   # test auto-encoder generator
