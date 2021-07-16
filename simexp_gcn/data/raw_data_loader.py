@@ -6,11 +6,13 @@ import simexp_gcn.data as data
 import simexp_gcn.data.utils
 
 class RawDataLoader():
-  def __init__(self, ts_dir=None, conn_dir=None, pheno_path=None):
+  def __init__(self, num_nodes, ts_dir=None, conn_dir=None, pheno_path=None):
     """ Initializer for DataLoader class.
 
     Parameters
     ----------
+      num_nodes: `int`
+        Number of nodes of the graph (or number of parcelations).
       ts_dir: str
         path to directory w/ timeseries
       conn_dir: str
@@ -18,6 +20,7 @@ class RawDataLoader():
       pheno_path: str
         path to phenotype file. corresponding file must be in .tsv format & columns ID and 'Subject Type'
     """
+    self.num_nodes = num_nodes
     self.ts_dir = ts_dir
     self.conn_dir = conn_dir
     self.pheno_path = pheno_path
@@ -36,6 +39,8 @@ class RawDataLoader():
     # get list of files based on phenotype file
     self.ts_filepaths, self.conn_filepaths = self._get_files_list()
     # infer non valid participant IDs based from timeserie files content
+    self.ts_shapes = self._get_ts_shapes()
+    self.node_axis = (self.ts_shapes == self.num_nodes).all(axis=0)
     self.valid_ids = self._check_valid_ids()
     # filter phenotype and file lists
     mask_valid = np.in1d(self.ids, self.valid_ids)
@@ -74,17 +79,25 @@ class RawDataLoader():
 
     return ts_filepaths, conn_filepaths
 
-  def _check_valid_ids(self):
-    """ Check whether participant IDs are valid regarding the timeserie data.
+  def _get_ts_shapes(self):
+    """ Get the shapes of timeseries.
     """
-    durations = []
+    shapes = []
     # check all shapes from *.npy header
     for ts_filepath in self.ts_filepaths:
       shape = data.utils.read_npy_array_header(ts_filepath)[0]
-      durations += [shape[0]]
+      shapes += [shape]
+
+    return np.array(shapes)
+
+  def _check_valid_ids(self):
+    """ Check whether participant IDs are valid regarding the timeserie data.
+    """
+    duration_axis = np.invert(self.node_axis)
+    durations = self.ts_shapes[:, duration_axis].flatten()
     # check durations
-    most_common_dura = np.bincount(durations).argmax()
-    mask_valid_ts = (durations == most_common_dura)
+    self.most_common_dura = np.bincount(durations).argmax()
+    mask_valid_ts = (durations == self.most_common_dura)
     non_valid_ids = np.array(self.ids)[~mask_valid_ts]
     if not mask_valid_ts.all():
       warnings.warn("Different shapes for sub ID(s): {}".format(non_valid_ids))
@@ -174,16 +187,15 @@ class RawDataLoader():
     label_df = pd.DataFrame(columns=['label', 'filename'])
     out_file = os.path.join(output_dir, "{}_{:03d}.npy")
     out_csv = os.path.join(output_dir, "labels.csv")
+    ts_duration = self.most_common_dura
 
     for ii in range(len(self.valid_ts_filepaths)):
       ts_filename = os.path.basename(self.valid_ts_filepaths[ii])
       ts_filename = "".join(ts_filename.split(".")[:-1])
       ts_label = self.get_valid_labels([ii])[0]
       ts_data = self.get_valid_timeseries([ii])[0]
-      ts_duration = ts_data.shape[0]
       # Split the timeseries
       rem = ts_duration % window_length
-      # Split the timeseries
       if rem == 0:
         n_splits = int(ts_duration / window_length)
       else:
@@ -198,6 +210,9 @@ class RawDataLoader():
       # save splitted timeserie and label
       for jj, split_ts in enumerate(np.split(ts_data, n_splits)):
         ts_output_file = out_file.format(ts_filename, jj)
+        # swap axis for pytorch compatibility if node is not the first axis
+        if not self.node_axis[0]:
+          split_ts = np.swapaxes(split_ts, 0, 1)
         np.save(ts_output_file, split_ts)
         curr_label = {'label': ts_label, 'filename': os.path.basename(ts_output_file)}
         label_df = label_df.append(curr_label, ignore_index=True)
@@ -208,7 +223,8 @@ if __name__ == "__main__":
   pheno_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "raw", "cobre", "phenotypic_data.tsv")
   
   RawDataLoad = RawDataLoader(
-      ts_dir=os.path.join(data_dir, "timeseries")
+      num_nodes=512
+      , ts_dir=os.path.join(data_dir, "timeseries")
       , conn_dir=os.path.join(data_dir, "connectomes")
       , pheno_path=pheno_path)
   timeseries = RawDataLoad.get_valid_timeseries()
