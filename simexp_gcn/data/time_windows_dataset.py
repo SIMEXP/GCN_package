@@ -18,8 +18,8 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
     , partition="train"
     , val_ratio=0.20
     , test_ratio=0.10
-    , random_seed=0
     , shuffle=False
+    , random_seed=0
     , normalize=False
     , pin_memory=False
     , autoencoder=False):
@@ -35,12 +35,12 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
         Validation data partition ratio (default: 0.2).
       test_ratio: `float`
         Test data partition ratio (default: 0.1).
-      random_seed: `int`
-        Seed value used to fix the random state (default: 0).
       shuffle: `bool`
         Shuffle the dataset or not (default: False).
+      random_seed: `int`
+        Seed value used to fix the random state (default: 0).
       normalize: `bool`
-        Either to normalize the generated data or not (default: True).
+        Either to normalize the generated data or not (default: False).
       pin_memory: `bool`
         Keep all the data into memory for much faster data generation, but requires more RAM (default: False).
       autoencoder: `bool`
