@@ -56,7 +56,7 @@ endif
 
 ## Check all todos
 todo:
-	@find . -name "*.py" -exec cat {} \; | grep -n TODO
+	@find . -name "*.py" -exec echo {} \; -exec grep -n "TODO" {} \;	
 
 ## Set up python interpreter environment
 create_environment:
