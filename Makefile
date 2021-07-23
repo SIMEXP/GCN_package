@@ -54,6 +54,10 @@ else
 	aws s3 sync s3://$(BUCKET)/data/ data/ --profile $(PROFILE)
 endif
 
+## Check all todos
+todo:
+	@find . -name "*.py" -exec cat {} \; | grep TODO
+
 ## Set up python interpreter environment
 create_environment:
 ifeq (True,$(HAS_CONDA))
