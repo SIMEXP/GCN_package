@@ -56,7 +56,7 @@ endif
 
 ## Check all todos
 todo:
-	@grep -r --include="*.py" TODO
+	@grep -nr --include="*.py" TODO
 
 ## Set up python interpreter environment
 create_environment:
