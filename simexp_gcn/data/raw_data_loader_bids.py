@@ -10,4 +10,4 @@
 #TODO: prepare data and labels from --prediction or --autoencoding
   # 1. let user choose whether it will perfom a prediction or encoding
     # a. if --prediction: read participants.tsv to get prediction target (user choice for which column to use, for example "sex", "group" or	"age")
-    # b. if --autoencoder: skip 
+    # b. if --autoencoder: skip  
