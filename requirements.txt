@@ -1,5 +1,6 @@
 nilearn==0.6.2
 pandas==0.25.1
+psutil==5.8.0
 --find-links https://download.pytorch.org/whl/torch_stable.html
 torch==1.8.1+cpu
 torchvision==0.9.1
