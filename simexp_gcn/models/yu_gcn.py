@@ -54,6 +54,9 @@ class LoicGCN(torch.nn.Module):
         self.fc2 = nn.Linear(256, 128)
         self.fc3 = nn.Linear(128, n_classes)
         self.dropout = nn.Dropout(0.2)
+        # adding persistent buffer for edges serialization
+        # self.register_buffer('edge_index', edge_index)
+        # self.register_buffer('edge_weight', edge_weight)
 
     def forward(self, x):
         x = self.conv1(x, self.edge_index, self.edge_weight)
