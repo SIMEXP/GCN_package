@@ -1,4 +1,4 @@
-nilearn==0.6.2
+nilearn==0.8.0
 pandas==0.25.1
 psutil==5.8.0
 --find-links https://download.pytorch.org/whl/torch_stable.html
