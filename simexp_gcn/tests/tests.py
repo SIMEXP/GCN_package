@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-from src.models.yu_gcn import YuGCN
+from src.models.gcn import GCN
 from src.models import utils
 from src.features import graph_construction as graph
 import pytest
@@ -98,7 +98,7 @@ class TestData:
         assert len(data) == 30
 
 class TestModels:
-    def test_yu_gcn(self):
+    def test_gcn(self):
         n_timepoints = 50
         batch_size = 128
 
@@ -115,7 +115,7 @@ class TestModels:
         val_loader = DataLoader(data, batch_size=batch_size, sampler=val_sampler)
 
         # Create model
-        gcn = YuGCN(data.graph.edge_index,data.graph.weight,n_timepoints=n_timepoints)
+        gcn = GCN(data.graph.edge_index,data.graph.weight,n_timepoints=n_timepoints)
 
         # Train and evaluate model
         loss_fn = nn.CrossEntropyLoss()
