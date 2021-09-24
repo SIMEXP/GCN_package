@@ -1,5 +1,16 @@
 import numpy as np
+import nilearn
+import nilearn.datasets
 from sklearn.model_selection import train_test_split
+
+def fetch_difumo(output_dir, n_parcels=512):
+  # Fetching atlas
+  atlas = nilearn.datasets.fetch_atlas_difumo(data_dir=output_dir, dimension=n_parcels)
+  atlas_filename = atlas['maps']
+  atlas_labels = atlas['labels']
+
+  # Fetching data
+  data = nilearn.datasets.fetch_cobre(data_dir=output_dir, n_subjects=None) #all subs
 
 # https://stackoverflow.com/questions/64226337/is-there-a-way-to-read-npy-header-without-loading-the-whole-file
 def read_npy_array_header(filepath):
