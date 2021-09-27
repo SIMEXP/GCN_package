@@ -120,24 +120,31 @@ def embedding_error(func_img, graph, maps_img, confounds=None):
     CSV file or array-like representing the signal(s) to filter out.
   """
 
-  nilearn.input_data.NiftiMapsMasker
   masker = nil.input_data.NiftiMapsMasker(maps_img=maps_img, standardize=True)
   masker.fit_transform(func_img, confounds=confounds)
 
 if __name__ == "__main__":
-  conn_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "cobre_difumo512", "connectomes")
-  raw_dir = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
+  # Parameters definition
+  data_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data")
+  conn_dir = os.path.join(data_dir, "processed", "cobre_difumo512", "connectomes")
+  data_dir = os.path.join(data_dir, "processed", "cobre_difumo512")
+  raw_dir = os.path.join(data_dir, "raw")
+  pheno_path = os.path.join(raw_dir, "cobre", "phenotypic_data.tsv")
   num_parcels = 512
+  patient_no = 0
 
+  # Data loading
   atlas = nil.datasets.fetch_atlas_difumo(data_dir=raw_dir, dimension=num_parcels)
   data = nil.datasets.fetch_cobre(data_dir=raw_dir, n_subjects=None)
-  connectomes = RawDataLoad.get_valid_connectomes()
-  graph = simexp_gcn.features.graph_construction.make_group_graph(connectomes, k=8, self_loops=False, symmetric=True)
   RawDataLoad = simexp_gcn.data.raw_data_loader.RawDataLoader(
     num_nodes = num_parcels
-    , ts_dir=ts_out
-    , conn_dir=conn_out
+    , ts_dir=os.path.join(data_dir, "timeseries")
+    , conn_dir=os.path.join(data_dir, "connectomes")
     , pheno_path=pheno_path)
+  connectomes = RawDataLoad.get_valid_connectomes()
+  graph = simexp_gcn.features.graph_construction.make_group_graph(connectomes, k=8, self_loops=False, symmetric=True)
+  # Embedding error
+  embedding_error(data.func[patient_no], graph, maps_img, confounds=data.confounds[patient_no])
 
 
 # #input  should be a pytorch model
