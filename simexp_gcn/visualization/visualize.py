@@ -3,6 +3,9 @@ import torch
 import copy
 import sklearn
 import matplotlib.pyplot as plt
+import nilearn as nil
+import simexp_gcn
+import simexp_gcn.data.raw_data_loader
 
 #TODO provide visualization tools
   #1. Basic graph plotting using https://networkx.org/documentation/stable/tutorial.html
@@ -12,7 +15,8 @@ import matplotlib.pyplot as plt
   #5. Graph signal reconstruction (for graph-AE)
 
 def PCA(data):
-  """
+  """Compute PCA using scikit-learn
+
   Parameters
   ----------
   data: `numpy array` of shape (n_samples, n_features)
@@ -42,7 +46,8 @@ class GetActivation():
     self.outputs = {}
 
 def visualize_activation(model, data_generator, layer_name):
-  """
+  """Visualize the activation layer from a PyTorch trained model
+
   Parameters
   ----------
   model: `torch.nn.Module`
@@ -81,7 +86,7 @@ def visualize_activation(model, data_generator, layer_name):
 
 
 def vizualize_weights(model, layer_name):
-  """
+  """ Visualize the weights from a specific layer of a PyTorch trained model
   Parameters
   ----------
   model: `torch.nn.Module`
@@ -99,6 +104,41 @@ def vizualize_weights(model, layer_name):
   axes.set_title("PCA decomposition of {} weights".format(layer_name))
 
   plt.show()
+
+def embedding_error(func_img, graph, maps_img, confounds=None):
+  """ Plot and compute the reconstruction error of fMRI data into spectral domain
+
+  Parameters
+  ----------
+  func_img: 4D `nibabel.nifti1.Nifti1Image`
+    Input data to embed and reconstruct.
+  graph: `torch_geometric.data`
+    Usually a connectome, or diffusion matrix in PyTorch format.
+  maps_img: 4D `nibabel.nifti1.Nifti1Image`
+    Set of continuous maps for nilearn masker.
+  confounds: `string` or 2D `np.array`
+    CSV file or array-like representing the signal(s) to filter out.
+  """
+
+  nilearn.input_data.NiftiMapsMasker
+  masker = nil.input_data.NiftiMapsMasker(maps_img=maps_img, standardize=True)
+  masker.fit_transform(func_img, confounds=confounds)
+
+if __name__ == "__main__":
+  conn_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "cobre_difumo512", "connectomes")
+  raw_dir = os.path.join(os.path.dirname(__file__), "..", "data", "raw")
+  num_parcels = 512
+
+  atlas = nil.datasets.fetch_atlas_difumo(data_dir=raw_dir, dimension=num_parcels)
+  data = nil.datasets.fetch_cobre(data_dir=raw_dir, n_subjects=None)
+  connectomes = RawDataLoad.get_valid_connectomes()
+  graph = simexp_gcn.features.graph_construction.make_group_graph(connectomes, k=8, self_loops=False, symmetric=True)
+  RawDataLoad = simexp_gcn.data.raw_data_loader.RawDataLoader(
+    num_nodes = num_parcels
+    , ts_dir=ts_out
+    , conn_dir=conn_out
+    , pheno_path=pheno_path)
+
 
 # #input  should be a pytorch model
 # model_path = os.path.join(os.path.dirname(__file__), "..", "..", "models", "gcn_test.pt")
