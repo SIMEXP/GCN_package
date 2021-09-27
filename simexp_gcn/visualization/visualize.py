@@ -4,8 +4,10 @@ import copy
 import sklearn
 import matplotlib.pyplot as plt
 import nilearn as nil
+import nilearn.input_data
 import simexp_gcn
 import simexp_gcn.data.raw_data_loader
+import simexp_gcn.features.graph_construction
 
 #TODO provide visualization tools
   #1. Basic graph plotting using https://networkx.org/documentation/stable/tutorial.html
@@ -123,11 +125,49 @@ def embedding_error(func_img, graph, maps_img, confounds=None):
   masker = nil.input_data.NiftiMapsMasker(maps_img=maps_img, standardize=True)
   masker.fit_transform(func_img, confounds=confounds)
 
+#   ###Step 3: Laplacian Matrix: L=I-D(-1/2)AD(-1/2)
+# def sparse_mx_to_torch_sparse_tensor(sparse_mx):
+#     """Convert a scipy sparse matrix to a torch sparse tensor."""
+#     sparse_mx = sparse_mx.tocoo().astype(np.float32)
+#     indices = torch.from_numpy(
+#         np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
+#     values = torch.from_numpy(sparse_mx.data)
+#     shape = torch.Size(sparse_mx.shape)
+#     return torch.sparse.FloatTensor(indices, values, shape)
+
+# t0 = time.time()
+# adj_mat = sparse_mx_to_torch_sparse_tensor(adj_mat_sp)
+# print("Converting from scipy sparse matrix:")
+# print(adj_mat_sp.indices)
+# print(adj_mat_sp.data)
+# print("Converting to torch sparse tensor:")
+# print(adj_mat._indices())
+# print(adj_mat._values())
+
+# edge_index = adj_mat._indices()
+# edge_weight = adj_mat._values()
+# row, col = edge_index
+        
+# #degree-matrix
+# deg = scatter_add(edge_weight, row, dim=0, dim_size=num_nodes)
+
+# # Compute normalized and rescaled Laplacian.
+# deg = deg.pow(-0.5)
+# deg[torch.isinf(deg)] = 0
+# lap = deg[row] * edge_weight * deg[col]
+
+# ###Rescale the Laplacian eigenvalues in [-1, 1]
+# ##rescale: 2L/lmax-I; lmax=1.0
+# fill_value = 1  ##-0.5
+# edge_index, lap = add_self_loops(edge_index, -lap, fill_value, num_nodes)
+
+# laplacian_matrix = sparse.coo_matrix((lap.numpy(),edge_index),shape=(num_nodes,num_nodes))
+
 if __name__ == "__main__":
   # Parameters definition
   data_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data")
   conn_dir = os.path.join(data_dir, "processed", "cobre_difumo512", "connectomes")
-  data_dir = os.path.join(data_dir, "processed", "cobre_difumo512")
+  ts_dir = os.path.join(data_dir, "processed", "cobre_difumo512", "timeseries")
   raw_dir = os.path.join(data_dir, "raw")
   pheno_path = os.path.join(raw_dir, "cobre", "phenotypic_data.tsv")
   num_parcels = 512
@@ -138,13 +178,13 @@ if __name__ == "__main__":
   data = nil.datasets.fetch_cobre(data_dir=raw_dir, n_subjects=None)
   RawDataLoad = simexp_gcn.data.raw_data_loader.RawDataLoader(
     num_nodes = num_parcels
-    , ts_dir=os.path.join(data_dir, "timeseries")
-    , conn_dir=os.path.join(data_dir, "connectomes")
+    , ts_dir=ts_dir
+    , conn_dir=conn_dir
     , pheno_path=pheno_path)
   connectomes = RawDataLoad.get_valid_connectomes()
   graph = simexp_gcn.features.graph_construction.make_group_graph(connectomes, k=8, self_loops=False, symmetric=True)
   # Embedding error
-  embedding_error(data.func[patient_no], graph, maps_img, confounds=data.confounds[patient_no])
+  embedding_error(data.func[patient_no], graph, atlas['maps'], confounds=data.confounds[patient_no])
 
 
 # #input  should be a pytorch model
