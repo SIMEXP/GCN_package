@@ -49,7 +49,7 @@ Project Organization
     │   │   └── graph_construction.py
     │   │
     │   ├── models         <- Modules for different model architectures & utils to run them.
-    │   │   ├── yu_gcn.py
+    │   │   ├── gcn.py
     │   │   └── utils.py
     │   │
     │   └── visualization  <- Modules to create exploratory and results oriented visualizations
