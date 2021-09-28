@@ -3,6 +3,7 @@ import torch
 import copy
 import sklearn
 import matplotlib.pyplot as plt
+import torch_geometric as tg
 import nilearn as nil
 import nilearn.input_data
 import simexp_gcn
@@ -122,18 +123,17 @@ def embedding_error(func_img, graph, maps_img, confounds=None):
     CSV file or array-like representing the signal(s) to filter out.
   """
 
-  masker = nil.input_data.NiftiMapsMasker(maps_img=maps_img, standardize=True)
-  masker.fit_transform(func_img, confounds=confounds)
-
-#   ###Step 3: Laplacian Matrix: L=I-D(-1/2)AD(-1/2)
-# def sparse_mx_to_torch_sparse_tensor(sparse_mx):
-#     """Convert a scipy sparse matrix to a torch sparse tensor."""
-#     sparse_mx = sparse_mx.tocoo().astype(np.float32)
-#     indices = torch.from_numpy(
-#         np.vstack((sparse_mx.row, sparse_mx.col)).astype(np.int64))
-#     values = torch.from_numpy(sparse_mx.data)
-#     shape = torch.Size(sparse_mx.shape)
-#     return torch.sparse.FloatTensor(indices, values, shape)
+  # extract timeserie data
+  masker = nil.input_data.NiftiMapsMasker(maps_img=maps_img, standardize=True, verbose=2, memory_level=0)
+  data = masker.fit_transform(func_img, confounds=confounds)
+  # compute the laplacian matrix: L=I-D(-1/2)AD(-1/2)
+  degree = tg.utils.degree(graph.edge_index[0, :])
+  degree = torch.diag(degree).pow(-0.5)
+  degree[torch.isinf(degree)] = 0
+  adj = tg.utils.to_dense_adj(graph.edge_index)[0, ...]
+  id = torch.diag(torch.ones(adj.shape[0]))
+  lap = id - torch.matmul(torch.matmul(degree, adj), degree)
+  print("DONE")
 
 # t0 = time.time()
 # adj_mat = sparse_mx_to_torch_sparse_tensor(adj_mat_sp)
