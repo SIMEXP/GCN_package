@@ -126,11 +126,11 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
       rng.shuffle(indexes)
 
     if self.partition == "train":
-        range_idx = (0, int(train_index * n_samples))
+      range_idx = (0, int(train_index * n_samples))
     elif self.partition == "valid":
-        range_idx = (int(train_index * n_samples), int(val_index * n_samples))
+      range_idx = (int(train_index * n_samples), int(val_index * n_samples))
     elif self.partition == "test":
-        range_idx = (int(val_index * n_samples), n_samples)       
+      range_idx = (int(val_index * n_samples), n_samples)       
 
     return indexes[range_idx[0]:range_idx[1]]
 
