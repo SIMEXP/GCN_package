@@ -1,14 +1,14 @@
 import os
 import numpy as np
 import pandas as pd
-import src.data.time_windows_dataset as tw
+import gcn_package.data.time_windows_dataset as tw
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-from src.models.gcn import GCN
-from src.models import utils
-from src.features import graph_construction as graph
+from gcn_package.models.gcn import GCN
+from gcn_package.models import utils
+from gcn_package.features import graph_construction as graph
 import pytest
 
 def cobre_test_data(n_subs=10):
