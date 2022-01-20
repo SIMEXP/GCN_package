@@ -3,7 +3,21 @@ simexp_gcn
 
 The SIMEXP lab package for GCN
 
-### TODO:
+# Installation
+
+We recommend to install the package inside a python virtual environment.
+
+`python3 -m venv ~/.virtualenvs/gcn_package`
+`source ~/.virtualenvs/gcn_package/bin/activate`
+`python3 -m pip install -r requirements.txt`
+
+### Computecanada
+
+Before creating the virtual environment, make sure you are using `python3`.
+
+`module load python/3.8`
+
+# TODO:
  - [ ] Tests for graph construction functions
  - [ ] Tests for data util functions
  - [ ] Tests for TimeWindows dataset
@@ -21,8 +35,7 @@ The SIMEXP lab package for GCN
          - Split and task-label based from [task event file](https://bids-specification.readthedocs.io/en/stable/04-modality-specific-files/05-task-events.html#task-events)
          - file should contain at least id
  
-Project Organization
-------------
+#Project Organization
 
     ├── LICENSE
     ├── Makefile           <- Makefile with commands like `make data` or `make train`
