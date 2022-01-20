@@ -6,9 +6,9 @@ import matplotlib.pyplot as plt
 import torch_geometric as tg
 import nilearn as nil
 import nilearn.input_data
-import simexp_gcn
-import simexp_gcn.data.raw_data_loader
-import simexp_gcn.features.graph_construction
+import gcn_package
+import gcn_package.data.raw_data_loader
+import gcn_package.features.graph_construction
 
 # TODO provide visualization tools
 # 1. Basic graph plotting using https://networkx.org/documentation/stable/tutorial.html
@@ -191,10 +191,10 @@ if __name__ == "__main__":
     atlas = nil.datasets.fetch_atlas_difumo(
         data_dir=raw_dir, dimension=num_parcels)
     data = nil.datasets.fetch_cobre(data_dir=raw_dir, n_subjects=None)
-    RawDataLoad = simexp_gcn.data.raw_data_loader.RawDataLoader(
+    RawDataLoad = gcn_package.data.raw_data_loader.RawDataLoader(
         num_nodes=num_parcels, ts_dir=ts_dir, conn_dir=conn_dir, pheno_path=pheno_path)
     connectomes = RawDataLoad.get_valid_connectomes()
-    graph = simexp_gcn.features.graph_construction.make_group_graph(
+    graph = gcn_package.features.graph_construction.make_group_graph(
         connectomes, k=8, self_loops=False, symmetric=True)
     # Embedding error
     embedding_error(data.func[patient_no], graph,
