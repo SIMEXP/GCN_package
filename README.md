@@ -10,6 +10,10 @@ We recommend to install the package inside a python virtual environment.
 ```
 python3 -m venv ~/.virtualenvs/gcn_package
 source ~/.virtualenvs/gcn_package/bin/activate
+```
+Now install the package using pip.
+
+```
 git clone https://github.com/SIMEXP/gcn_package/edit/main/README.md
 cd gcn_package
 python3 -m pip install -r requirements.txt
