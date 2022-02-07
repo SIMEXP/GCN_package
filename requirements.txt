@@ -2,9 +2,9 @@ nilearn==0.8.1
 pandas==1.3.0
 psutil==5.8.0
 --find-links https://download.pytorch.org/whl/torch_stable.html
-torch==1.8.1+cpu
+torch==1.9.0+cpu
 torchvision==0.9.1
---find-links https://pytorch-geometric.com/whl/torch-1.8.0+cpu.html
+--find-links https://data.pyg.org/whl/torch-1.9.0+cpu.html
 torch-cluster
 torch-scatter
 torch-sparse
