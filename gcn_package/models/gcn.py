@@ -10,7 +10,6 @@ class YuGCN(torch.nn.Module):
         super().__init__()
         self.edge_index = edge_index
         self.edge_weight = edge_weight
-        self.batch_size, self.n_roi = batch_size, n_roi
         self.conv1 = tg.nn.ChebConv(in_channels=n_timepoints,out_channels=32,K=2,bias=True)
         self.conv2 = tg.nn.ChebConv(in_channels=32,out_channels=32,K=2,bias=True)
         self.conv3 = tg.nn.ChebConv(in_channels=32,out_channels=32,K=2,bias=True)
@@ -37,7 +36,7 @@ class YuGCN(torch.nn.Module):
         x = self.conv6(x, self.edge_index, self.edge_weight)
         x = tg.nn.global_mean_pool(x,torch.from_numpy(np.array(range(x.size(0)),dtype=int)))
 
-        x = x.view(-1, self.batch_size * self.n_roi)
+        x = torch.flatten(x, 1)
         x = self.fc1(x)
         x = self.dropout(x)
         x = self.fc2(x)
