@@ -6,17 +6,17 @@ import torch_geometric as tg
 import numpy as np
 
 class YuGCN(torch.nn.Module):
-    def __init__(self, edge_index, edge_weight, batch_size=32, n_roi=512, n_timepoints=50, n_classes=2):
+    def __init__(self, edge_index, edge_weight, n_filters=32, n_roi=512, n_timepoints=50, n_classes=2):
         super().__init__()
         self.edge_index = edge_index
         self.edge_weight = edge_weight
-        self.conv1 = tg.nn.ChebConv(in_channels=n_timepoints,out_channels=32,K=2,bias=True)
-        self.conv2 = tg.nn.ChebConv(in_channels=32,out_channels=32,K=2,bias=True)
-        self.conv3 = tg.nn.ChebConv(in_channels=32,out_channels=32,K=2,bias=True)
-        self.conv4 = tg.nn.ChebConv(in_channels=32,out_channels=32,K=2,bias=True)
-        self.conv5 = tg.nn.ChebConv(in_channels=32,out_channels=32,K=2,bias=True)
-        self.conv6 = tg.nn.ChebConv(in_channels=32,out_channels=32,K=2,bias=True)
-        self.fc1 = nn.Linear(batch_size * n_roi, 256)
+        self.conv1 = tg.nn.ChebConv(in_channels=n_timepoints, out_channels=n_filters, K=2,bias=True)
+        self.conv2 = tg.nn.ChebConv(in_channels=n_filters, out_channels=n_filters, K=2, bias=True)
+        self.conv3 = tg.nn.ChebConv(in_channels=n_filters, out_channels=n_filters, K=2, bias=True)
+        self.conv4 = tg.nn.ChebConv(in_channels=n_filters, out_channels=n_filters, K=2, bias=True)
+        self.conv5 = tg.nn.ChebConv(in_channels=n_filters, out_channels=n_filters, K=2, bias=True)
+        self.conv6 = tg.nn.ChebConv(in_channels=n_filters, out_channels=n_filters, K=2, bias=True)
+        self.fc1 = nn.Linear(n_filters * n_roi, 256)
         self.fc2 = nn.Linear(256, 128)
         self.fc3 = nn.Linear(128, n_classes)
         self.dropout = nn.Dropout(0.5)
@@ -34,9 +34,9 @@ class YuGCN(torch.nn.Module):
         x = self.conv5(x, self.edge_index, self.edge_weight)
         x = F.relu(x)
         x = self.conv6(x, self.edge_index, self.edge_weight)
-        x = tg.nn.global_mean_pool(x,torch.from_numpy(np.array(range(x.size(0)),dtype=int)))
+        x = tg.nn.global_mean_pool(x, torch.from_numpy(np.array(range(x.size(0)), dtype=int)))
 
-        x = torch.flatten(x, 1)
+        x = torch.nn.Flatten()
         x = self.fc1(x)
         x = self.dropout(x)
         x = self.fc2(x)
