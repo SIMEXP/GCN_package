@@ -219,6 +219,7 @@ class RawDataLoader():
     label_df.to_csv(out_csv, index=False)
 
 if __name__ == "__main__":
+  #TODO: this should be a test
   data_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "cobre_difumo512")
   pheno_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "raw", "cobre", "phenotypic_data.tsv")
   
