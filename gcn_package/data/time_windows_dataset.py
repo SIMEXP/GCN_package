@@ -165,6 +165,7 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
     return np.array(labels['label'])
 
 if __name__ == "__main__":
+  #TODO: this should be a test
   data_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "interim")
   random_seed = 0
 
