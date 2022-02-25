@@ -1,14 +1,14 @@
 import os
 import numpy as np
 import pandas as pd
-import src.data.time_windows_dataset as tw
+import gcn_package.data.time_windows_dataset as tw
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from torch.utils.data.sampler import SubsetRandomSampler
-from src.models.gcn import GCN
-from src.models import utils
-from src.features import graph_construction as graph
+from gcn_package.models.gcn import GCN
+from gcn_package.models import utils
+from gcn_package.features import graph_construction as graph
 import pytest
 
 
@@ -142,4 +142,4 @@ class TestModels:
             #print(f"Epoch {t+1}\n-------------------------------")
             utils.train_loop(train_loader, gcn, loss_fn, optimizer)
             utils.test_loop(test_loader, gcn, loss_fn)
-        # print("Done!")
+        #print("Done!")

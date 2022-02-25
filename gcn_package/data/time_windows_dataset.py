@@ -1,6 +1,6 @@
 """
 str(__file__) \
-+ "\ngcn_package v{} - class {}".format(simexp_gcn.__version__, self.__class__.__name__) \
++ "\ngcn_package v{} - class {}".format(gcn_package.__version__, self.__class__.__name__) \
 + "\n" + str(datetime.datetime.now()) \
 + "\n" + str(platform.platform()) \
 """
@@ -126,11 +126,11 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
       rng.shuffle(indexes)
 
     if self.partition == "train":
-        range_idx = (0, int(train_index * n_samples))
+      range_idx = (0, int(train_index * n_samples))
     elif self.partition == "valid":
-        range_idx = (int(train_index * n_samples), int(val_index * n_samples))
+      range_idx = (int(train_index * n_samples), int(val_index * n_samples))
     elif self.partition == "test":
-        range_idx = (int(val_index * n_samples), n_samples)       
+      range_idx = (int(val_index * n_samples), n_samples)       
 
     return indexes[range_idx[0]:range_idx[1]]
 
@@ -165,6 +165,7 @@ class TimeWindowsDataset(torch.utils.data.Dataset):
     return np.array(labels['label'])
 
 if __name__ == "__main__":
+  #TODO: this should be a test
   data_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "interim")
   random_seed = 0
 

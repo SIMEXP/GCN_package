@@ -152,14 +152,14 @@ def make_group_graph(connectomes, k=8, self_loops=False, symmetric=True):
 if __name__ == "__main__":
     import os
     import matplotlib.pyplot as plt
-    import simexp_gcn
-    import simexp_gcn.data as data
-    import simexp_gcn.data.raw_data_loader
+    import gcn_package
+    import gcn_package.data as data
+    import gcn_package.data.raw_data_loader
     
     conn_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "cobre_difumo512", "connectomes")
     ts_dir = os.path.join(os.path.dirname(__file__), "..", "..", "data", "processed", "cobre_difumo512", "timeseries")
     pheno_path = os.path.join(os.path.dirname(__file__), "..", "..", "data", "raw", "cobre", "phenotypic_data.tsv")
-    DataLoad = simexp_gcn.data.raw_data_loader.RawDataLoader(ts_dir=ts_dir, conn_dir=conn_dir,  pheno_path=pheno_path)
+    DataLoad = gcn_package.data.raw_data_loader.RawDataLoader(ts_dir=ts_dir, conn_dir=conn_dir,  pheno_path=pheno_path)
     avg_conn = np.array(DataLoad.get_valid_connectomes()).mean(axis=0)
 
     import time
