@@ -56,12 +56,12 @@ class YuGCN(torch.nn.Module):
 class ChebConvBlock(nn.Module):
     """ Custom ChebConvBlock """
 
-    def __init__(self, edge_index, edge_weight, gcn_filter_size=2, in_filters=32, out_filters=32, normalization=None, bias=True, activation="ReLU", dropout=0.2):
+    def __init__(self, edge_index, edge_weight, gcn_filter_size=2, in_filters=32, out_filters=32, gcn_normalization=None, bias=True, activation="ReLU", dropout=0.2):
         self.edge_index = edge_index
         self.edge_weight = edge_weight
         self.dropout_threshold = dropout
         self.conv = tg.nn.ChebConv(in_channels=in_filters, out_channels=out_filters,
-                                   K=gcn_filter_size, normalization=normalization, bias=bias)
+                                   K=gcn_filter_size, normalization=gcn_normalization, bias=bias)
         # list of all activations https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
         self.activation = eval(f"torch.nn.functionnal.{activation}()")
         self.dropout = torch.nn.Dropout(p=self.dropout_threshold)
@@ -103,44 +103,58 @@ class LinearBlock(nn.Module):
         return x
 
 
-class LoicGCN(torch.nn.Module):
-    def __init__(self, edge_index, edge_weight, n_timepoints=50, n_classes=2):
+class CustomGCN(torch.nn.Module):
+    def __init__(self, edge_index, edge_weight, n_timepoints=50, n_roi=512, n_classes=2, n_gcn_layers=6, gcn_filters=32, gcn_filter_size=2, gcn_rate=1, gcn_normalization=None, n_linear_layers=3, linear_filters=256, linear_rate=2,  batch_normalisation=False, bias=True, activation="ReLU", dropout=0.2):
         super().__init__()
         self.edge_index = edge_index
         self.edge_weight = edge_weight
-        self.conv1 = tg.nn.ChebConv(
-            in_channels=n_timepoints, out_channels=32, K=2, bias=True)
-        self.conv2 = tg.nn.ChebConv(
-            in_channels=32, out_channels=32, K=2, bias=True)
-        self.conv3 = tg.nn.ChebConv(
-            in_channels=32, out_channels=16, K=2, bias=True)
-        self.fc1 = nn.Linear(512*16, 256)
-        self.fc2 = nn.Linear(256, 128)
-        self.fc3 = nn.Linear(128, n_classes)
-        self.dropout = nn.Dropout(0.2)
-        # adding persistent buffer for edges serialization
-        # self.register_buffer('edge_index', edge_index)
-        # self.register_buffer('edge_weight', edge_weight)
+        self.n_timepoints = n_timepoints
+        self.n_roi = n_roi
+        self.n_gcn_layers = n_gcn_layers
+        self.gcn_filters = gcn_filters
+        self.gcn_filter_size = gcn_filter_size
+        self.gcn_rate = gcn_rate
+        self.gcn_normalization = gcn_normalization
+        self.n_linear_layers = n_linear_layers
+        self.linear_filters = linear_filters
+        self.linear_rate = linear_rate
+        self.bias = bias
+        self.activation = activation
+        self.batch_normalisation = batch_normalisation
+        self.dropout = dropout
+        self.n_classes = n_classes
 
-    def forward(self, x):
-        x = self.conv1(x, self.edge_index, self.edge_weight)
-        x = F.relu(x)
-        x = self.dropout(x)
-        x = self.conv2(x, self.edge_index, self.edge_weight)
-        x = F.relu(x)
-        x = self.dropout(x)
-        x = self.conv3(x, self.edge_index, self.edge_weight)
-        x = F.relu(x)
-        x = self.dropout(x)
-        x = tg.nn.global_mean_pool(x, torch.from_numpy(
-            np.array(range(x.size(0)), dtype=int)))
-        x = x.view(-1, 512*16)
-        x = self.fc1(x)
-        x = self.dropout(x)
-        x = self.fc2(x)
-        x = self.dropout(x)
-        x = self.fc3(x)
-        return x
+        def forward(self, x):
+            # GCN layers
+            for ii in range(n_gcn_layers):
+                in_filters = int(self.gcn_filters // self.gcn_rate**(ii-1))
+                out_filters = int(self.gcn_filters // self.gcn_rate**ii)
+                if ii == 0:
+                    in_filters = self.n_timepoints
+                    out_filters = self.gcn_filters
+                layer = ChebConvBlock(edge_index=self.edge_index, edge_weight=self.edge_weight, gcn_filter_size=self.gcn_filter_size, in_filters=in_filters,
+                                      out_filters=out_filters, gcn_normalization=self.gcn_normalization, bias=self.bias, activation=self.activation, dropout=self.dropout)
+                x = layer(x)
+            # global mean pool and flattening
+            x = tg.nn.global_mean_pool(x, batch=torch.from_numpy(
+                np.array(range(x.size(0)), dtype=int)))
+            x = torch.flatten(x, 1)
+            # Linear layers
+            for ii in range(n_linear_layers):
+                in_filters = int(self.linear_filters //
+                                 self.linear_filter_decreasing_rate**(ii-1))
+                out_filters = int(self.linear_filters //
+                                  self.linear_filter_decreasing_rate**ii)
+                if ii == 0:
+                    gcn_filters = int(self.gcn_filters //
+                                      self.gcn_rate**(n_gcn_layers-1))
+                    in_filters = gcn_filters * self.n_roi
+                if ii == (n_linear_layers-1):
+                    out_filters = self.n_classes
+                layer = LinearBlock(in_filters=in_filters, out_filters=out_filters, activation=self.activation,
+                                    batch_normalisation=self.batch_normalisation, dropout=self.dropout)
+                x = layer(x)
+            return x
 
 
 class STGCN(torch.nn.Module):
