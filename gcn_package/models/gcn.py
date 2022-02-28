@@ -124,37 +124,37 @@ class CustomGCN(torch.nn.Module):
         self.dropout = dropout
         self.n_classes = n_classes
 
-        def forward(self, x):
-            # GCN layers
-            for ii in range(n_gcn_layers):
-                in_filters = int(self.gcn_filters // self.gcn_rate**(ii-1))
-                out_filters = int(self.gcn_filters // self.gcn_rate**ii)
-                if ii == 0:
-                    in_filters = self.n_timepoints
-                    out_filters = self.gcn_filters
-                layer = ChebConvBlock(edge_index=self.edge_index, edge_weight=self.edge_weight, gcn_filter_size=self.gcn_filter_size, in_filters=in_filters,
-                                      out_filters=out_filters, gcn_normalization=self.gcn_normalization, bias=self.bias, activation=self.activation, dropout=self.dropout)
-                x = layer(x)
-            # global mean pool and flattening
-            x = tg.nn.global_mean_pool(x, batch=torch.from_numpy(
-                np.array(range(x.size(0)), dtype=int)))
-            x = torch.flatten(x, 1)
-            # Linear layers
-            for ii in range(n_linear_layers):
-                in_filters = int(self.linear_filters //
-                                 self.linear_filter_decreasing_rate**(ii-1))
-                out_filters = int(self.linear_filters //
-                                  self.linear_filter_decreasing_rate**ii)
-                if ii == 0:
-                    gcn_filters = int(self.gcn_filters //
-                                      self.gcn_rate**(n_gcn_layers-1))
-                    in_filters = gcn_filters * self.n_roi
-                if ii == (n_linear_layers-1):
-                    out_filters = self.n_classes
-                layer = LinearBlock(in_filters=in_filters, out_filters=out_filters, activation=self.activation,
-                                    batch_normalisation=self.batch_normalisation, dropout=self.dropout)
-                x = layer(x)
-            return x
+    def forward(self, x):
+        # GCN layers
+        for ii in range(self.n_gcn_layers):
+            in_filters = int(self.gcn_filters // self.gcn_rate**(ii-1))
+            out_filters = int(self.gcn_filters // self.gcn_rate**ii)
+            if ii == 0:
+                in_filters = self.n_timepoints
+                out_filters = self.gcn_filters
+            layer = ChebConvBlock(edge_index=self.edge_index, edge_weight=self.edge_weight, gcn_filter_size=self.gcn_filter_size, in_filters=in_filters,
+                                  out_filters=out_filters, gcn_normalization=self.gcn_normalization, bias=self.bias, activation=self.activation, dropout=self.dropout)
+            x = layer(x)
+        # global mean pool and flattening
+        x = tg.nn.global_mean_pool(x, batch=torch.from_numpy(
+            np.array(range(x.size(0)), dtype=int)))
+        x = torch.flatten(x, 1)
+        # Linear layers
+        for ii in range(self.n_linear_layers):
+            in_filters = int(self.linear_filters //
+                              self.linear_filter_decreasing_rate**(ii-1))
+            out_filters = int(self.linear_filters //
+                              self.linear_filter_decreasing_rate**ii)
+            if ii == 0:
+                gcn_filters = int(self.gcn_filters //
+                                  self.gcn_rate**(self.n_gcn_layers-1))
+                in_filters = gcn_filters * self.n_roi
+            if ii == (self.n_linear_layers-1):
+                out_filters = self.n_classes
+            layer = LinearBlock(in_filters=in_filters, out_filters=out_filters, activation=self.activation,
+                                batch_normalisation=self.batch_normalisation, dropout=self.dropout)
+            x = layer(x)
+        return x
 
 
 class STGCN(torch.nn.Module):
