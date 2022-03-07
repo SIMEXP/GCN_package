@@ -43,11 +43,23 @@ def test_linearblock():
     print("LinearBlock output: {}".format(out.shape))
     assert out.shape == (BATCH_SIZE, OUT_FEATURE_SIZE)
 
-    # model = gcn_package.models.gcn.CustomGCN(edge_index=graph.edge_index, edge_weight=graph.edge_attr, n_timepoints=FEATURE_SIZE, n_roi=NUM_NODES, n_classes=2,
-    #              n_gcn_layers=6, gcn_filters=32, gcn_filter_size=2, gcn_rate=1, gcn_normalization="sym",
-    #              n_linear_layers=3, linear_filters=16, linear_rate=2, batch_normalisation=True,
-    #              bias=True, activation="ReLU", dropout=0.2):
+def test_customgcn():
+    # create toy graph compatible with torch_geometric, and input
+    adjacency_matrix = np.random.rand(NUM_NODES, NUM_NODES).astype(np.float32)
+    adjacency_matrix = adjacency_matrix*(adjacency_matrix>0.8)
+    adjacency_matrix = (adjacency_matrix + adjacency_matrix.transpose())/2
+    np.fill_diagonal(adjacency_matrix, 1)
+    adj_sparse = tg.utils.dense_to_sparse(torch.from_numpy(adjacency_matrix))
+    graph = tg.data.Data(edge_index=adj_sparse[0], edge_attr=adj_sparse[1])
+    # one batch with 4 nodes that has a feature array of size 10
+    x = torch.from_numpy(np.random.randn(BATCH_SIZE, NUM_NODES, FEATURE_SIZE).astype(np.float32))
+    model = gcn_package.models.gcn.CustomGCN(edge_index=graph.edge_index, edge_weight=graph.edge_attr, n_timepoints=FEATURE_SIZE, n_roi=NUM_NODES, n_classes=2,
+                 n_gcn_layers=6, gcn_filters=32, gcn_filter_size=2, gcn_filter_decreasing_rate=1, gcn_normalization="sym",
+                 n_linear_layers=3, linear_filters=16, linear_filter_decreasing_rate=2, batch_normalisation=True,
+                 bias=True, activation="ReLU", dropout=0.2)
+    out = model(x)
 
 if __name__ == "__main__":
     test_chebconvblock()
     test_linearblock()
+    test_customgcn()
