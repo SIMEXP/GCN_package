@@ -88,34 +88,26 @@ class YuGCN(torch.nn.Module):
 class ChebConvBlock(nn.Module):
     """ Custom ChebConvBlock """
 
-    def __init__(self, edge_index, edge_attribute, gcn_filter_size=2, in_filters=32, out_filters=32, gcn_normalization=None, bias=True, activation="ReLU", dropout=0.2, edge_pooling=True):
-        super(self.__class__, self).__init__()
+    def __init__(self, edge_index, edge_weight, gcn_filter_size=2, in_filters=32, out_filters=32, gcn_normalization=None, bias=True, activation="ReLU", dropout=0.2):
         self.edge_index = edge_index
-        self.edge_attribute = edge_attribute
+        self.edge_weight = edge_weight
         self.dropout_threshold = dropout
-        self.edge_pooling = edge_pooling
-        # network building
-        # https://graphreason.github.io/papers/17.pdf
-        self.edge_pool = tg.nn.EdgePooling(
-            in_channels=in_filters, dropout=self.dropout_threshold)
-        self.cheb_conv = tg.nn.ChebConv(in_channels=in_filters, out_channels=out_filters,
-                                        K=gcn_filter_size, normalization=gcn_normalization, bias=bias)
+        self.conv = tg.nn.ChebConv(in_channels=in_filters, out_channels=out_filters,
+                                   K=gcn_filter_size, normalization=gcn_normalization, bias=bias)
         # list of all activations https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
-        self.activation = eval(f"torch.nn.{activation}()")
+        self.activation = eval(f"torch.nn.functionnal.{activation}()")
         self.dropout = torch.nn.Dropout(p=self.dropout_threshold)
+        # https://graphreason.github.io/papers/17.pdf
+        self.edge_pooling = tg.nn.EdgePooling(
+            in_channels=in_filters, dropout=self.dropout_threshold)
 
     def forward(self, x):
-        x = self.cheb_conv(x, edge_index=self.edge_index,
-                           edge_weight=self.edge_attribute)
+        if self.dropout_threshold > 0:
+            x = self.edge_pooling(x, self.edge_index)
+        x = self.conv(x, self.edge_index, self.edge_weight)
         x = self.activation(x)
         if self.dropout_threshold > 0:
             x = self.dropout(x)
-        #TODO: issues with edge pooling 
-        # if self.edge_pooling:
-        #     batch_vector = torch.from_numpy(
-        #         np.array(range(x.size(0)), dtype=int))
-        #     x, edge_index, _, _ = self.edge_pool(
-        #         x, edge_index=self.edge_index, batch=batch_vector)
 
         return x
 
@@ -127,7 +119,7 @@ class LinearBlock(nn.Module):
         self.dropout_threshold = dropout
         self.batch_normalisation = batch_normalisation
         self.fc = torch.nn.Linear(in_filters, out_filters)
-        self.activation = eval(f"torch.nn.{activation}")
+        self.activation = eval(f"torch.nn.functionnal.{activation}")
         self.batch_norm = torch.nn.BatchNorm1d(num_features=out_filters)
         self.dropout = torch.nn.Dropout(p=self.dropout_threshold)
 
@@ -143,8 +135,6 @@ class LinearBlock(nn.Module):
         return x
 
 
-# for dynamic models: https://pytorch-forecasting.readthedocs.io/en/stable/tutorials/building.html
-# another example with gcn: https://gitcode.net/mirrors/dmlc/dgl/-/blob/master/examples/pytorch/seal/model.py
 class CustomGCN(torch.nn.Module):
     def __init__(self, edge_index, edge_weight, n_timepoints=50, n_roi=512, n_classes=2, n_gcn_layers=6, gcn_filters=32, gcn_filter_size=2, gcn_rate=1, gcn_normalization=None, n_linear_layers=3, linear_filters=256, linear_rate=2,  batch_normalisation=False, bias=True, activation="ReLU", dropout=0.2):
         super().__init__()
@@ -156,7 +146,6 @@ class CustomGCN(torch.nn.Module):
         self.gcn_filters = gcn_filters
         self.gcn_filter_size = gcn_filter_size
         self.gcn_rate = gcn_rate
-        # https://pytorch-geometric.readthedocs.io/en/latest/modules/nn.html#torch_geometric.nn.conv.ChebConv
         self.gcn_normalization = gcn_normalization
         self.n_linear_layers = n_linear_layers
         self.linear_filters = linear_filters
@@ -175,7 +164,7 @@ class CustomGCN(torch.nn.Module):
             if ii == 0:
                 in_filters = self.n_timepoints
                 out_filters = self.gcn_filters
-            layer = ChebConvBlock(edge_index=self.edge_index, edge_attribute=self.edge_weight, gcn_filter_size=self.gcn_filter_size, in_filters=in_filters,
+            layer = ChebConvBlock(edge_index=self.edge_index, edge_weight=self.edge_weight, gcn_filter_size=self.gcn_filter_size, in_filters=in_filters,
                                   out_filters=out_filters, gcn_normalization=self.gcn_normalization, bias=self.bias, activation=self.activation, dropout=self.dropout)
             x = layer(x)
         # global mean pool and flattening
@@ -185,7 +174,7 @@ class CustomGCN(torch.nn.Module):
         # Linear layers
         for ii in range(self.n_linear_layers):
             in_filters = int(self.linear_filters //
-                             self.linear_filter_decreasing_rate**(ii-1))
+                              self.linear_filter_decreasing_rate**(ii-1))
             out_filters = int(self.linear_filters //
                               self.linear_filter_decreasing_rate**ii)
             if ii == 0:
