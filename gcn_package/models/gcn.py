@@ -11,6 +11,7 @@ class YuGCN(torch.nn.Module):
         super().__init__()
         self.edge_index = edge_index
         self.edge_weight = edge_weight
+<<<<<<< HEAD
         self.conv1 = tg.nn.ChebConv(
             in_channels=n_timepoints, out_channels=n_filters, K=2, bias=True)
         self.conv2 = tg.nn.ChebConv(
@@ -27,9 +28,38 @@ class YuGCN(torch.nn.Module):
         self.fc2 = nn.Linear(256, 128)
         self.fc3 = nn.Linear(128, n_classes)
         self.dropout = nn.Dropout(0.5)
+=======
+>>>>>>> 694f25d81c03c19b49c8aa51cc8d2a00752098ad
 
-    def forward(self, x):
+        self.features = tg.nn.Sequential('x, edge_index, edge_weight', [
+            (tg.nn.ChebConv(in_channels=n_timepoints, out_channels=n_filters, K=2,bias=True),
+             'x, edge_index, edge_weight -> x'),
+            nn.ReLU(inplace=True),
+            (tg.nn.ChebConv(in_channels=n_filters, out_channels=n_filters, K=2, bias=True),
+             'x, edge_index, edge_weight -> x'),
+            nn.ReLU(inplace=True),
+            (tg.nn.ChebConv(in_channels=n_filters, out_channels=n_filters, K=2, bias=True),
+             'x, edge_index, edge_weight -> x'),
+            nn.ReLU(inplace=True),
+            (tg.nn.ChebConv(in_channels=n_filters, out_channels=n_filters, K=2, bias=True),
+             'x, edge_index, edge_weight -> x'),
+            nn.ReLU(inplace=True),
+            (tg.nn.ChebConv(in_channels=n_filters, out_channels=n_filters, K=2, bias=True),
+             'x, edge_index, edge_weight -> x'),
+            nn.ReLU(inplace=True),
+            (tg.nn.ChebConv(in_channels=n_filters, out_channels=n_filters, K=2, bias=True),
+             'x, edge_index, edge_weight -> x'),
+        ])
+        self.pool = tg.nn.global_mean_pool
+        self.classifier = nn.Sequential(
+            nn.Linear(n_filters * n_roi, 256),
+            nn.Dropout(0.5),
+            nn.Linear(256, 128),
+            nn.Dropout(0.5),
+            nn.Linear(128, n_classes)
+        )
 
+<<<<<<< HEAD
         x = self.conv1(x, self.edge_index, self.edge_weight)
         x = F.relu(x)
         x = self.conv2(x, self.edge_index, self.edge_weight)
@@ -43,13 +73,15 @@ class YuGCN(torch.nn.Module):
         x = self.conv6(x, self.edge_index, self.edge_weight)
         x = tg.nn.global_mean_pool(x, torch.from_numpy(
             np.array(range(x.size(0)), dtype=int)))
+=======
+    def forward(self, x):
+        batch_vector = torch.from_numpy(np.array(range(x.size(0)), dtype=int))
+>>>>>>> 694f25d81c03c19b49c8aa51cc8d2a00752098ad
 
+        x = self.features(x, self.edge_index, self.edge_weight)
+        x = self.pool(x, batch_vector)
         x = torch.flatten(x, 1)
-        x = self.fc1(x)
-        x = self.dropout(x)
-        x = self.fc2(x)
-        x = self.dropout(x)
-        x = self.fc3(x)
+        x = self.classifier(x)
         return x
 
 
