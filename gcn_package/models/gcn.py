@@ -198,7 +198,7 @@ class CustomGCN(torch.nn.Module):
                                             dropout=self.dropout, in_filters=in_decode_filters, out_filters=out_decode_filters))
 
     def forward(self, x):
-        batch_vector = torch.range(start=0, end=(x.size(0)-1), dtype=int)
+        batch_vector = torch.range(start=0, end=x.size(0), dtype=int)
         # gcn encoder
         for encode_layer in self.encoder:
             x = encode_layer(x)
