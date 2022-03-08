@@ -58,6 +58,7 @@ def test_customgcn():
                  n_linear_layers=3, linear_filters=16, linear_filter_decreasing_rate=2, batch_normalisation=True,
                  bias=True, activation="ReLU", dropout=0.2)
     out = model(x)
+    assert out.shape == (BATCH_SIZE, 2)
 
 if __name__ == "__main__":
     test_chebconvblock()
