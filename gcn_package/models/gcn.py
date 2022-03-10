@@ -41,7 +41,7 @@ class YuGCN(torch.nn.Module):
         )
 
     def forward(self, x):
-        batch_vector = torch.from_numpy(np.array(range(x.size(0)), dtype=int))
+        batch_vector = torch.arange(x.size(0), dtype=int)
 
         x = self.features(x, self.edge_index, self.edge_weight)
         x = self.pool(x, batch_vector)
@@ -253,8 +253,7 @@ class STGCN(torch.nn.Module):
         # x = self.recurent(x)
         # x = F.relu(x)
         # x = self.dropout(x)
-        x = tg.nn.global_mean_pool(x, torch.from_numpy(
-            np.array(range(x.size(0)), dtype=int)))
+        x = tg.nn.global_mean_pool(x, torch.arange(x.size(0), dtype=int))
         x = x.view(-1, 512*16)
         x = self.fc1(x)
         x = self.dropout(x)
