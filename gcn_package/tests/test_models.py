@@ -3,7 +3,7 @@ import sys
 import numpy as np
 import torch
 import torch_geometric as tg
-sys.path.append(os.path.join(os.path.dirname(__file__), ".."))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
 import gcn_package
 import gcn_package.visualization.visualize
 import gcn_package.models.gcn
