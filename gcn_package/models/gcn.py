@@ -5,6 +5,7 @@ import torch_geometric as tg
 # import torch_geometric_temporal as tgt
 import numpy as np
 
+
 class YuGCN(torch.nn.Module):
     def __init__(self, edge_index, edge_weight, n_filters=32, n_roi=512, n_timepoints=50, n_classes=2):
         super().__init__()
@@ -12,7 +13,7 @@ class YuGCN(torch.nn.Module):
         self.edge_weight = edge_weight
 
         self.features = tg.nn.Sequential('x, edge_index, edge_weight', [
-            (tg.nn.ChebConv(in_channels=n_timepoints, out_channels=n_filters, K=2,bias=True),
+            (tg.nn.ChebConv(in_channels=n_timepoints, out_channels=n_filters, K=2, bias=True),
              'x, edge_index, edge_weight -> x'),
             nn.ReLU(inplace=True),
             (tg.nn.ChebConv(in_channels=n_filters, out_channels=n_filters, K=2, bias=True),
@@ -47,6 +48,7 @@ class YuGCN(torch.nn.Module):
         x = torch.flatten(x, 1)
         x = self.classifier(x)
         return x
+
 
 class ChebConvBlock(torch.nn.Module):
     """ Custom ChebConvBlock """
@@ -110,10 +112,50 @@ class LinearBlock(torch.nn.Module):
 # for dynamic models: https://pytorch-forecasting.readthedocs.io/en/stable/tutorials/building.html
 # another example with gcn: https://gitcode.net/mirrors/dmlc/dgl/-/blob/master/examples/pytorch/seal/model.py
 class CustomGCN(torch.nn.Module):
-    def __init__(self, edge_index, edge_weight, n_timepoints=50, n_roi=512, n_classes=2,
+    def __init__(self, edge_index, edge_weight, n_timepoints, n_roi, n_classes=2,
                  n_gcn_layers=6, gcn_filters=32, gcn_filter_size=2, gcn_filter_decreasing_rate=1, gcn_normalization=None,
-                 n_linear_layers=3, linear_filters=256, linear_filter_decreasing_rate=2, batch_normalisation=False,
+                 n_linear_layers=3, linear_filters=256, linear_filter_decreasing_rate=0.5, batch_normalisation=False,
                  bias=True, activation="ReLU", dropout=0.2):
+        """
+        Create a fully parametrizable GCN model.
+        Parameters
+        ----------
+        edge_index : torch.Tensor
+            Edge indexes, attribute from a torch_geometric `Data` object.
+        edge_weight : torch.Tensor
+            Edge weights, attribute from a torch_geometric `Data` object.
+        n_timepoints: int
+            Size of the temporal dimension from input.
+        n_roi: int
+            Number of dimensions from the atlas.
+        n_classes: int
+            Number of classes to predict (default: 2).
+        n_gcn_layers: int
+            Number of GCN layers in the model (default: 6).
+        gcn_filters: int
+            Number of Chebyshev filters, has a big impact on the number of total parameters (default: 32).
+        gcn_filter_size: int
+            Chebyshev filter size, for wider receptive field (default: 2).
+        gcn_filter_decreasing_rate: float
+            Ratio by which to reduce the number of Chebyshev filters, per layer (default: 1).
+        gcn_normalization: str
+            The normalization scheme for the graph Laplacian: None, "sym" for symmetric or "rw" for random walk (default: None).
+        n_linear_layers: int
+            Number of GCN layers in the model (default: 3).
+        linear_filters: int
+            Number of fully-connected filters, has a big impact on the number of total parameters (default: 256).
+        linear_filter_decreasing_rate: float
+            Ratio by which to reduce the number of fully-connected filters, per layer (default: 0.5).
+        batch_normalisation: bool
+            Whether to apply batch normalization method or not (default: False).
+        bias: bool
+            Whether to add bias to the layer or not (default: True).
+        activation: 
+            Non-linear activation functions in the model, for a full list of available functions check here
+            https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity (default: "ReLU").
+        dropout:
+            Dropout rate for regularization (default: 0.2).
+        """
         super().__init__()
         self.edge_index = edge_index
         self.edge_weight = edge_weight
@@ -137,8 +179,10 @@ class CustomGCN(torch.nn.Module):
         # build encoder block (GCN)
         self.encoder = torch.nn.ModuleList()
         for ii in range(self.n_gcn_layers):
-            in_encode_filters = int(self.gcn_filters // self.gcn_filter_decreasing_rate**(ii-1))
-            out_encode_filters = int(self.gcn_filters // self.gcn_filter_decreasing_rate**ii)
+            in_encode_filters = int(
+                self.gcn_filters * self.gcn_filter_decreasing_rate**(ii-1))
+            out_encode_filters = int(
+                self.gcn_filters * self.gcn_filter_decreasing_rate**ii)
             if ii == 0:
                 in_encode_filters = self.n_timepoints
                 out_encode_filters = self.gcn_filters
@@ -148,20 +192,22 @@ class CustomGCN(torch.nn.Module):
         # build decoder block (linear layers)
         self.decoder = torch.nn.ModuleList()
         for ii in range(self.n_linear_layers):
+            activation = self.activation
             in_decode_filters = int(
-                self.linear_filters // self.linear_filter_decreasing_rate**(ii-1))
+                self.linear_filters * self.linear_filter_decreasing_rate**(ii-1))
             out_decode_filters = int(
-                self.linear_filters // self.linear_filter_decreasing_rate**ii)
+                self.linear_filters * self.linear_filter_decreasing_rate**ii)
             if ii == 0:
                 in_decode_filters = out_encode_filters * self.n_roi
                 out_decode_filters = self.linear_filters
             if ii == (self.n_linear_layers - 1):
                 out_decode_filters = self.n_classes
-            self.decoder.append(LinearBlock(activation=self.activation, batch_normalisation=self.batch_normalisation, bias=self.bias,
+                activation = "Sigmoid"
+            self.decoder.append(LinearBlock(activation=activation, batch_normalisation=self.batch_normalisation, bias=self.bias,
                                             dropout=self.dropout, in_filters=in_decode_filters, out_filters=out_decode_filters))
 
     def forward(self, x):
-        batch_vector = torch.range(start=0, end=(x.size(0)-1), dtype=int)
+        batch_vector = torch.arange(x.size(0), dtype=int)
         # gcn encoder
         for encode_layer in self.encoder:
             x = encode_layer(x)
@@ -179,9 +225,12 @@ class STGCN(torch.nn.Module):
         super().__init__()
         self.edge_index = edge_index
         self.edge_weight = edge_weight
-        self.conv1 = tg.nn.ChebConv(in_channels=n_timepoints, out_channels=32, K=2, bias=True)
-        self.conv2 = tg.nn.ChebConv(in_channels=32, out_channels=32, K=2, bias=True)
-        self.conv3 = tg.nn.ChebConv(in_channels=32, out_channels=16, K=2, bias=True)
+        self.conv1 = tg.nn.ChebConv(
+            in_channels=n_timepoints, out_channels=32, K=2, bias=True)
+        self.conv2 = tg.nn.ChebConv(
+            in_channels=32, out_channels=32, K=2, bias=True)
+        self.conv3 = tg.nn.ChebConv(
+            in_channels=32, out_channels=16, K=2, bias=True)
         # self.recurent = tgt.nn.recurrent.STConv(in_channels=16, out_channels=16, K=2, hidden_channels=4, kernel_size=10)
         self.fc1 = nn.Linear(512*16, 256)
         self.fc2 = nn.Linear(256, 128)
@@ -204,7 +253,8 @@ class STGCN(torch.nn.Module):
         # x = self.recurent(x)
         # x = F.relu(x)
         # x = self.dropout(x)
-        x = tg.nn.global_mean_pool(x, torch.from_numpy(np.array(range(x.size(0)), dtype=int)))
+        x = tg.nn.global_mean_pool(x, torch.from_numpy(
+            np.array(range(x.size(0)), dtype=int)))
         x = x.view(-1, 512*16)
         x = self.fc1(x)
         x = self.dropout(x)

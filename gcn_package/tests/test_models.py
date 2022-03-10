@@ -55,7 +55,7 @@ def test_customgcn():
     x = torch.from_numpy(np.random.randn(BATCH_SIZE, NUM_NODES, FEATURE_SIZE).astype(np.float32))
     model = gcn_package.models.gcn.CustomGCN(edge_index=graph.edge_index, edge_weight=graph.edge_attr, n_timepoints=FEATURE_SIZE, n_roi=NUM_NODES, n_classes=2,
                  n_gcn_layers=6, gcn_filters=32, gcn_filter_size=2, gcn_filter_decreasing_rate=1, gcn_normalization="sym",
-                 n_linear_layers=3, linear_filters=16, linear_filter_decreasing_rate=2, batch_normalisation=True,
+                 n_linear_layers=3, linear_filters=16, linear_filter_decreasing_rate=0.5, batch_normalisation=True,
                  bias=True, activation="ReLU", dropout=0.2)
     out = model(x)
     assert out.shape == (BATCH_SIZE, 2)
